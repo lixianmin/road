@@ -39,6 +39,7 @@ type (
 
 func NewApp(args AppArgs) *App {
 	checkAppArgs(&args)
+	logger.Init(args.Logger)
 
 	var common = commonSessionArgs{
 		packetDecoder:    codec.NewPomeloPacketDecoder(),

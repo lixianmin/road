@@ -1,6 +1,7 @@
 package bugfly
 
 import (
+	"github.com/lixianmin/logo"
 	"time"
 )
 
@@ -15,4 +16,5 @@ type AppArgs struct {
 	Acceptor         Acceptor
 	HeartbeatTimeout time.Duration // 心跳超时时间
 	DataCompression  bool          // 数据是否压缩
+	Logger           logo.ILogger  // 自定义日志对象，默认只输出到控制台
 }
