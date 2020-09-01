@@ -96,7 +96,7 @@ func (my *App) Register(c component.Component, options ...component.Option) {
 func (my *App) onNewSession(fetus *AppLoopArgs, conn PlayerConn) {
 	var session = NewSession(conn, my.commonSessionArgs)
 
-	var id = session.GetSessionId()
+	var id = session.SessionId()
 	my.sessions.Put(id, session)
 
 	session.OnClosed(func() {

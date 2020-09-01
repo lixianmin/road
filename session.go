@@ -2,12 +2,13 @@ package bugfly
 
 import (
 	"context"
-	"github.com/lixianmin/bugfly/logger"
 	"github.com/lixianmin/bugfly/conn/codec"
 	"github.com/lixianmin/bugfly/conn/message"
+	"github.com/lixianmin/bugfly/logger"
 	"github.com/lixianmin/bugfly/route"
 	"github.com/lixianmin/bugfly/serialize"
 	"github.com/lixianmin/got/loom"
+	"net"
 	"sync"
 	"sync/atomic"
 	"time"
@@ -127,6 +128,10 @@ func (my *Session) OnClosed(callback func()) {
 	my.lock.Unlock()
 }
 
-func (my *Session) GetSessionId() int64 {
+func (my *Session) SessionId() int64 {
 	return my.id
+}
+
+func (my *Session) RemoteAddr() net.Addr {
+	return my.conn.RemoteAddr()
 }
