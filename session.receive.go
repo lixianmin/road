@@ -2,9 +2,10 @@ package bugfly
 
 import (
 	"context"
-	"github.com/lixianmin/bugfly/logger"
 	"github.com/lixianmin/bugfly/conn/message"
 	"github.com/lixianmin/bugfly/conn/packet"
+	"github.com/lixianmin/bugfly/ifs"
+	"github.com/lixianmin/bugfly/logger"
 	"github.com/lixianmin/bugfly/route"
 	"github.com/lixianmin/got/loom"
 	"sync/atomic"
@@ -98,8 +99,11 @@ func (my *Session) onReceivedDataPacket(p *packet.Packet) (receivedItem, error) 
 		return receivedItem{}, err
 	}
 
+	var ctx = context.WithValue(context.Background(), ifs.CtxKeySession, my)
+	ctx = context.WithValue(ctx, ifs.CtxKeyBeginTime, time.Now())
+
 	var item = receivedItem{
-		ctx:   context.Background(),
+		ctx:   ctx,
 		route: r,
 		msg:   msg,
 	}

@@ -4,7 +4,7 @@ import (
 	"github.com/gorilla/websocket"
 	"github.com/lixianmin/bugfly/conn/codec"
 	"github.com/lixianmin/bugfly/conn/packet"
-	"github.com/lixianmin/bugfly/constants"
+	"github.com/lixianmin/bugfly/ifs"
 	"io"
 	"net"
 	"time"
@@ -46,9 +46,9 @@ func (my *WSConn) GetNextMessage() (b []byte, err error) {
 	}
 	dataLen := len(msgBytes[codec.HeadLength:])
 	if dataLen < msgSize {
-		return nil, constants.ErrReceivedMsgSmallerThanExpected
+		return nil, ifs.ErrReceivedMsgSmallerThanExpected
 	} else if dataLen > msgSize {
-		return nil, constants.ErrReceivedMsgBiggerThanExpected
+		return nil, ifs.ErrReceivedMsgBiggerThanExpected
 	}
 	return msgBytes, err
 }

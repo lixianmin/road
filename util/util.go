@@ -2,7 +2,7 @@ package util
 
 import (
 	"github.com/lixianmin/bugfly/logger"
-	"github.com/lixianmin/bugfly/constants"
+	"github.com/lixianmin/bugfly/ifs"
 	"github.com/lixianmin/bugfly/serialize"
 	"reflect"
 )
@@ -32,7 +32,7 @@ func Pcall(method reflect.Method, args []reflect.Value) (rets interface{}, err e
 		} else if !r[0].IsNil() {
 			rets = r[0].Interface()
 		} else {
-			err = constants.ErrReplyShouldBeNotNull
+			err = ifs.ErrReplyShouldBeNotNull
 		}
 	}
 	return
