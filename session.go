@@ -41,6 +41,7 @@ type (
 		commonSessionArgs
 		id           int64
 		conn         PlayerConn
+		attachment   *Attachment
 		sendingChan  chan sendingItem
 		receivedChan chan receivedItem
 		lastAt       int64 // last heartbeat unix time stamp
@@ -79,6 +80,7 @@ func NewSession(conn PlayerConn, args commonSessionArgs) *Session {
 		commonSessionArgs: args,
 		id:                atomic.AddInt64(&idGenerator, 1),
 		conn:              conn,
+		attachment:        &Attachment{},
 		sendingChan:       make(chan sendingItem, bufferSize),
 		receivedChan:      make(chan receivedItem, bufferSize),
 		lastAt:            time.Now().Unix(),
@@ -128,10 +130,14 @@ func (my *Session) OnClosed(callback func()) {
 	my.lock.Unlock()
 }
 
-func (my *Session) SessionId() int64 {
+func (my *Session) Id() int64 {
 	return my.id
 }
 
 func (my *Session) RemoteAddr() net.Addr {
 	return my.conn.RemoteAddr()
+}
+
+func (my *Session) Attachment() *Attachment {
+	return my.attachment
 }
