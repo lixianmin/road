@@ -80,3 +80,10 @@ func (my *Attachment) Get1(key interface{}) interface{} {
 func (my *Attachment) Get2(key interface{}) (interface{}, bool) {
 	return my.table.Load(key)
 }
+
+func (my *Attachment) dispose() {
+	my.table.Range(func(key, value interface{}) bool {
+		my.table.Delete(key)
+		return true
+	})
+}

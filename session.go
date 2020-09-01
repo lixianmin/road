@@ -96,6 +96,7 @@ func NewSession(conn acceptor.PlayerConn, args commonSessionArgs) *Session {
 func (my *Session) Close() {
 	my.wc.Close(func() {
 		_ = my.conn.Close()
+		my.attachment.dispose()
 		my.invokeOnClosedCallbacks()
 	})
 }
