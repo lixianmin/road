@@ -1,9 +1,9 @@
 package bugfly
 
 import (
-	"github.com/lixianmin/logger"
 	"github.com/lixianmin/bugfly/component"
 	"github.com/lixianmin/bugfly/conn/message"
+	"github.com/lixianmin/bugfly/logger"
 	"github.com/lixianmin/bugfly/serialize"
 	"github.com/lixianmin/bugfly/service"
 	"github.com/lixianmin/bugfly/util"

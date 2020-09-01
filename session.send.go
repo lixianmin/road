@@ -3,9 +3,9 @@ package bugfly
 import (
 	"context"
 	"fmt"
-	"github.com/lixianmin/logger"
 	"github.com/lixianmin/bugfly/conn/message"
 	"github.com/lixianmin/bugfly/conn/packet"
+	"github.com/lixianmin/bugfly/logger"
 	"github.com/lixianmin/bugfly/util"
 	"github.com/lixianmin/got/loom"
 	"sync/atomic"

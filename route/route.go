@@ -23,7 +23,7 @@ package route
 import (
 	"errors"
 	"fmt"
-	"github.com/lixianmin/logger"
+	"github.com/lixianmin/bugfly/logger"
 	"strings"
 )
 

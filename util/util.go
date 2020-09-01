@@ -1,7 +1,7 @@
 package util
 
 import (
-	"github.com/lixianmin/logger"
+	"github.com/lixianmin/bugfly/logger"
 	"github.com/lixianmin/bugfly/constants"
 	"github.com/lixianmin/bugfly/serialize"
 	"reflect"

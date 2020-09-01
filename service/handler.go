@@ -2,7 +2,7 @@ package service
 
 import (
 	"fmt"
-	"github.com/lixianmin/logger"
+	"github.com/lixianmin/bugfly/logger"
 	"github.com/lixianmin/bugfly/component"
 )
 

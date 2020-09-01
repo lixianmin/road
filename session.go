@@ -2,7 +2,7 @@ package bugfly
 
 import (
 	"context"
-	"github.com/lixianmin/logger"
+	"github.com/lixianmin/bugfly/logger"
 	"github.com/lixianmin/bugfly/conn/codec"
 	"github.com/lixianmin/bugfly/conn/message"
 	"github.com/lixianmin/bugfly/route"

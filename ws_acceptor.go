@@ -2,7 +2,7 @@ package bugfly
 
 import (
 	"github.com/gorilla/websocket"
-	"github.com/lixianmin/logger"
+	"github.com/lixianmin/bugfly/logger"
 	"net"
 	"net/http"
 )
