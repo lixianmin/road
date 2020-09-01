@@ -2,6 +2,7 @@ package bugfly
 
 import (
 	"context"
+	"github.com/lixianmin/bugfly/acceptor"
 	"github.com/lixianmin/bugfly/conn/codec"
 	"github.com/lixianmin/bugfly/conn/message"
 	"github.com/lixianmin/bugfly/logger"
@@ -40,7 +41,7 @@ type (
 	Session struct {
 		commonSessionArgs
 		id           int64
-		conn         PlayerConn
+		conn         acceptor.PlayerConn
 		attachment   *Attachment
 		sendingChan  chan sendingItem
 		receivedChan chan receivedItem
@@ -74,7 +75,7 @@ type (
 	}
 )
 
-func NewSession(conn PlayerConn, args commonSessionArgs) *Session {
+func NewSession(conn acceptor.PlayerConn, args commonSessionArgs) *Session {
 	const bufferSize = 16
 	var agent = &Session{
 		commonSessionArgs: args,

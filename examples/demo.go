@@ -2,6 +2,7 @@ package main
 
 import (
 	"github.com/lixianmin/bugfly"
+	"github.com/lixianmin/bugfly/acceptor"
 	"github.com/lixianmin/bugfly/component"
 	"github.com/lixianmin/logo"
 	"strings"
@@ -16,7 +17,7 @@ Copyright (C) - All Rights Reserved
 
 func main() {
 	logo.GetLogger().SetFilterLevel(logo.LevelDebug)
-	var accept = bugfly.NewWSAcceptor(":8880")
+	var accept = acceptor.NewWSAcceptor(":8880")
 	var app = bugfly.NewApp(bugfly.AppArgs{
 		Acceptor: accept,
 	})

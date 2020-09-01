@@ -1,4 +1,4 @@
-package bugfly
+package acceptor
 
 import (
 	"github.com/gorilla/websocket"

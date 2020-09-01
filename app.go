@@ -2,6 +2,7 @@ package bugfly
 
 import (
 	"encoding/json"
+	"github.com/lixianmin/bugfly/acceptor"
 	"github.com/lixianmin/bugfly/component"
 	"github.com/lixianmin/bugfly/conn/codec"
 	"github.com/lixianmin/bugfly/conn/message"
@@ -24,7 +25,7 @@ Copyright (C) - All Rights Reserved
 type (
 	App struct {
 		commonSessionArgs
-		acceptor Acceptor
+		acceptor acceptor.Acceptor
 		sessions loom.Map
 		wc       loom.WaitClose
 		tasks    *loom.TaskChan
@@ -93,7 +94,7 @@ func (my *App) Register(c component.Component, options ...component.Option) {
 	}
 }
 
-func (my *App) onNewSession(fetus *AppLoopArgs, conn PlayerConn) {
+func (my *App) onNewSession(fetus *AppLoopArgs, conn acceptor.PlayerConn) {
 	var session = NewSession(conn, my.commonSessionArgs)
 
 	var id = session.Id()
