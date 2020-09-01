@@ -2,8 +2,8 @@ package service
 
 import (
 	"fmt"
-	"github.com/lixianmin/gonsole/bugfly/component"
-	"github.com/lixianmin/gonsole/bugfly/route"
+	"github.com/lixianmin/bugfly/component"
+	"github.com/lixianmin/bugfly/route"
 )
 
 /********************************************************************

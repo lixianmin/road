@@ -2,10 +2,10 @@ package bugfly
 
 import (
 	"context"
-	"github.com/lixianmin/gonsole/logger"
-	"github.com/lixianmin/gonsole/bugfly/conn/message"
-	"github.com/lixianmin/gonsole/bugfly/conn/packet"
-	"github.com/lixianmin/gonsole/bugfly/route"
+	"github.com/lixianmin/logger"
+	"github.com/lixianmin/bugfly/conn/message"
+	"github.com/lixianmin/bugfly/conn/packet"
+	"github.com/lixianmin/bugfly/route"
 	"github.com/lixianmin/got/loom"
 	"sync/atomic"
 	"time"

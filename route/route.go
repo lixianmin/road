@@ -23,7 +23,7 @@ package route
 import (
 	"errors"
 	"fmt"
-	"github.com/lixianmin/gonsole/logger"
+	"github.com/lixianmin/logger"
 	"strings"
 )
 

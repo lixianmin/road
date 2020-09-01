@@ -1,6 +1,6 @@
 package codec
 
-import "github.com/lixianmin/gonsole/bugfly/conn/packet"
+import "github.com/lixianmin/bugfly/conn/packet"
 
 // ParseHeader parses a packet header and returns its dataLen and packetType or an error
 func ParseHeader(header []byte) (int, packet.Type, error) {

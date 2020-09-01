@@ -1,8 +1,8 @@
 package main
 
 import (
-	"github.com/lixianmin/gonsole/bugfly"
-	"github.com/lixianmin/gonsole/bugfly/component"
+	"github.com/lixianmin/bugfly"
+	"github.com/lixianmin/bugfly/component"
 	"github.com/lixianmin/logo"
 	"strings"
 )

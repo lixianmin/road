@@ -2,14 +2,14 @@ package bugfly
 
 import (
 	"encoding/json"
-	"github.com/lixianmin/gonsole/logger"
-	"github.com/lixianmin/gonsole/bugfly/component"
-	"github.com/lixianmin/gonsole/bugfly/conn/codec"
-	"github.com/lixianmin/gonsole/bugfly/conn/message"
-	"github.com/lixianmin/gonsole/bugfly/conn/packet"
-	"github.com/lixianmin/gonsole/bugfly/serialize"
-	"github.com/lixianmin/gonsole/bugfly/service"
-	"github.com/lixianmin/gonsole/bugfly/util/compression"
+	"github.com/lixianmin/logger"
+	"github.com/lixianmin/bugfly/component"
+	"github.com/lixianmin/bugfly/conn/codec"
+	"github.com/lixianmin/bugfly/conn/message"
+	"github.com/lixianmin/bugfly/conn/packet"
+	"github.com/lixianmin/bugfly/serialize"
+	"github.com/lixianmin/bugfly/service"
+	"github.com/lixianmin/bugfly/util/compression"
 	"github.com/lixianmin/got/loom"
 	"time"
 )

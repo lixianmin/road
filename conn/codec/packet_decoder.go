@@ -20,7 +20,7 @@
 
 package codec
 
-import "github.com/lixianmin/gonsole/bugfly/conn/packet"
+import "github.com/lixianmin/bugfly/conn/packet"
 
 // PacketDecoder interface
 type PacketDecoder interface {

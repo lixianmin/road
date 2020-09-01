@@ -1,12 +1,12 @@
 package bugfly
 
 import (
-	"github.com/lixianmin/gonsole/logger"
-	"github.com/lixianmin/gonsole/bugfly/component"
-	"github.com/lixianmin/gonsole/bugfly/conn/message"
-	"github.com/lixianmin/gonsole/bugfly/serialize"
-	"github.com/lixianmin/gonsole/bugfly/service"
-	"github.com/lixianmin/gonsole/bugfly/util"
+	"github.com/lixianmin/logger"
+	"github.com/lixianmin/bugfly/component"
+	"github.com/lixianmin/bugfly/conn/message"
+	"github.com/lixianmin/bugfly/serialize"
+	"github.com/lixianmin/bugfly/service"
+	"github.com/lixianmin/bugfly/util"
 	"github.com/lixianmin/got/loom"
 	"reflect"
 )

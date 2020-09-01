@@ -22,7 +22,7 @@ package codec
 
 import (
 	"bytes"
-	"github.com/lixianmin/gonsole/bugfly/conn/packet"
+	"github.com/lixianmin/bugfly/conn/packet"
 )
 
 // PomeloPacketDecoder reads and decodes bugfly data slice following pomelo's protocol

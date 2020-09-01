@@ -2,9 +2,9 @@ package bugfly
 
 import (
 	"github.com/gorilla/websocket"
-	"github.com/lixianmin/gonsole/bugfly/conn/codec"
-	"github.com/lixianmin/gonsole/bugfly/conn/packet"
-	"github.com/lixianmin/gonsole/bugfly/constants"
+	"github.com/lixianmin/bugfly/conn/codec"
+	"github.com/lixianmin/bugfly/conn/packet"
+	"github.com/lixianmin/bugfly/constants"
 	"io"
 	"net"
 	"time"
