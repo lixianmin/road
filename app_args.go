@@ -1,7 +1,7 @@
 package bugfly
 
 import (
-	"github.com/lixianmin/bugfly/acceptor"
+	"github.com/lixianmin/road/acceptor"
 	"github.com/lixianmin/logo"
 	"time"
 )

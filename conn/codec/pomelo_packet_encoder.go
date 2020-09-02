@@ -21,7 +21,7 @@
 package codec
 
 import (
-	"github.com/lixianmin/bugfly/conn/packet"
+	"github.com/lixianmin/road/conn/packet"
 )
 
 // PomeloPacketEncoder struct

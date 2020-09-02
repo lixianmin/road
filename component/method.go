@@ -2,7 +2,7 @@ package component
 
 import (
 	"context"
-	"github.com/lixianmin/bugfly/conn/message"
+	"github.com/lixianmin/road/conn/message"
 	"reflect"
 	"unicode"
 	"unicode/utf8"

@@ -2,11 +2,11 @@ package bugfly
 
 import (
 	"context"
-	"github.com/lixianmin/bugfly/conn/message"
-	"github.com/lixianmin/bugfly/conn/packet"
-	"github.com/lixianmin/bugfly/ifs"
-	"github.com/lixianmin/bugfly/logger"
-	"github.com/lixianmin/bugfly/route"
+	"github.com/lixianmin/road/conn/message"
+	"github.com/lixianmin/road/conn/packet"
+	"github.com/lixianmin/road/ifs"
+	"github.com/lixianmin/road/logger"
+	"github.com/lixianmin/road/route"
 	"github.com/lixianmin/got/loom"
 	"sync/atomic"
 	"time"

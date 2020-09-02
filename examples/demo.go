@@ -1,9 +1,9 @@
 package main
 
 import (
-	"github.com/lixianmin/bugfly"
-	"github.com/lixianmin/bugfly/acceptor"
-	"github.com/lixianmin/bugfly/component"
+	"github.com/lixianmin/road"
+	"github.com/lixianmin/road/acceptor"
+	"github.com/lixianmin/road/component"
 	"github.com/lixianmin/logo"
 	"strings"
 )

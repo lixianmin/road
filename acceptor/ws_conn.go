@@ -2,9 +2,9 @@ package acceptor
 
 import (
 	"github.com/gorilla/websocket"
-	"github.com/lixianmin/bugfly/conn/codec"
-	"github.com/lixianmin/bugfly/conn/packet"
-	"github.com/lixianmin/bugfly/ifs"
+	"github.com/lixianmin/road/conn/codec"
+	"github.com/lixianmin/road/conn/packet"
+	"github.com/lixianmin/road/ifs"
 	"io"
 	"net"
 	"time"

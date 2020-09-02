@@ -1,9 +1,9 @@
 package util
 
 import (
-	"github.com/lixianmin/bugfly/logger"
-	"github.com/lixianmin/bugfly/ifs"
-	"github.com/lixianmin/bugfly/serialize"
+	"github.com/lixianmin/road/logger"
+	"github.com/lixianmin/road/ifs"
+	"github.com/lixianmin/road/serialize"
 	"reflect"
 )
 

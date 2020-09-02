@@ -22,7 +22,7 @@ package message
 
 import (
 	"encoding/binary"
-	"github.com/lixianmin/bugfly/util/compression"
+	"github.com/lixianmin/road/util/compression"
 )
 
 // Encoder interface

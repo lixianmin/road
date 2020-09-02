@@ -1,11 +1,11 @@
 package bugfly
 
 import (
-	"github.com/lixianmin/bugfly/component"
-	"github.com/lixianmin/bugfly/conn/message"
-	"github.com/lixianmin/bugfly/serialize"
-	"github.com/lixianmin/bugfly/service"
-	"github.com/lixianmin/bugfly/util"
+	"github.com/lixianmin/road/component"
+	"github.com/lixianmin/road/conn/message"
+	"github.com/lixianmin/road/serialize"
+	"github.com/lixianmin/road/service"
+	"github.com/lixianmin/road/util"
 	"github.com/lixianmin/got/loom"
 	"reflect"
 )

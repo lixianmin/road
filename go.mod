@@ -1,4 +1,4 @@
-module github.com/lixianmin/bugfly
+module github.com/lixianmin/road
 
 go 1.13
 

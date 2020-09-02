@@ -2,8 +2,8 @@ package bugfly
 
 import (
 	"context"
-	"github.com/lixianmin/bugfly/ifs"
-	"github.com/lixianmin/bugfly/logger"
+	"github.com/lixianmin/road/ifs"
+	"github.com/lixianmin/road/logger"
 	"time"
 )
 
