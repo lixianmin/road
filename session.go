@@ -71,7 +71,7 @@ type (
 		route   string       // message route (push)
 		mid     uint         // response message id (response)
 		payload interface{}  // payload
-		err     bool         // if its an error message
+		hasErr  bool         // if its an error message
 	}
 )
 

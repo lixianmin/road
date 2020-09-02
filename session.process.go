@@ -29,15 +29,25 @@ func (my *Session) goProcess(later *loom.Later) {
 	}
 }
 
-func (my *Session) processReceived(data receivedItem) {
-	ret, err := processReceivedImpl(data, my.serializer)
-	if data.msg.Type != message.Notify {
+func (my *Session) processReceived(item receivedItem) {
+	payload, err := processReceivedImpl(item, my.serializer)
+	if item.msg.Type != message.Notify {
 		if err != nil {
-			logger.Info("Failed to process handler message: %s", err.Error())
+			logger.Info("failed to process message, route=%s, err=%q", item.route, err.Error())
+			payload1, err1 := serializeReturn(my.serializer, err)
+			if err1 != nil {
+				logger.Info("err1=%q", err1)
+				return
+			}
+
+			err2 := my.responseMID(item.ctx, item.msg.ID, payload1, true)
+			if err2 != nil {
+				logger.Info("err=%q", err2)
+			}
 		} else {
-			err := my.responseMID(data.ctx, data.msg.ID, ret)
-			if err != nil {
-				logger.Info(err)
+			err1 := my.responseMID(item.ctx, item.msg.ID, payload, false)
+			if err1 != nil {
+				logger.Info("err=%q", err1)
 			}
 		}
 	}
@@ -62,6 +72,9 @@ func processReceivedImpl(data receivedItem, serializer serialize.Serializer) ([]
 	}
 
 	resp, err := util.Pcall(handler.Method, args)
+	if err != nil {
+		return nil, err
+	}
 
 	ret, err := serializeReturn(serializer, resp)
 	if err != nil {

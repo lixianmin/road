@@ -51,8 +51,8 @@ func (my *Session) Push(route string, v interface{}) error {
 	return my.send(sendingInfo{typ: message.Push, route: route, payload: v})
 }
 
-func (my *Session) responseMID(ctx context.Context, mid uint, payload interface{}) error {
-	return my.send(sendingInfo{ctx: ctx, typ: message.Response, mid: mid, payload: payload, err: false})
+func (my *Session) responseMID(ctx context.Context, mid uint, payload interface{}, hasErr bool) error {
+	return my.send(sendingInfo{ctx: ctx, typ: message.Response, mid: mid, payload: payload, hasErr: hasErr})
 }
 
 func (my *Session) send(info sendingInfo) error {
@@ -73,7 +73,7 @@ func (my *Session) send(info sendingInfo) error {
 		Data:  payload,
 		Route: info.route,
 		ID:    info.mid,
-		Err:   info.err,
+		Err:   info.hasErr,
 	}
 
 	// packet encode
@@ -87,7 +87,7 @@ func (my *Session) send(info sendingInfo) error {
 		data: p,
 	}
 
-	if info.err {
+	if info.hasErr {
 		item.err = fmt.Errorf("has pending error")
 	}
 
