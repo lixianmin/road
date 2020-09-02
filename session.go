@@ -63,16 +63,6 @@ type (
 		data []byte
 		err  error
 	}
-
-	// 未编码消息
-	sendingInfo struct {
-		ctx     context.Context
-		typ     message.Type // message type
-		route   string       // message route (push)
-		mid     uint         // response message id (response)
-		payload []byte       // payload
-		hasErr  bool         // if its an error message
-	}
 )
 
 func NewSession(conn acceptor.PlayerConn, args commonSessionArgs) *Session {

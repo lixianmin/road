@@ -31,8 +31,8 @@ func (my *Session) goProcess(later *loom.Later) {
 func (my *Session) processReceived(item receivedItem) {
 	payload, err := processReceivedImpl(item, my.serializer)
 	if item.msg.Type != message.Notify {
-		var info = sendingInfo{ctx: item.ctx, typ: message.Response, mid: item.msg.ID, payload: payload}
-		_ = my.sendMayError(info, err)
+		var msg = message.Message{Type: message.Response, ID: item.msg.ID, Data: payload}
+		_ = my.sendMayError(item.ctx, msg, err)
 	}
 }
 

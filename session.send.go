@@ -1,6 +1,7 @@
 package bugfly
 
 import (
+	"context"
 	"fmt"
 	"github.com/lixianmin/bugfly/conn/message"
 	"github.com/lixianmin/bugfly/conn/packet"
@@ -48,60 +49,51 @@ func (my *Session) goSend(later *loom.Later) {
 
 func (my *Session) Push(route string, v interface{}) error {
 	var payload, err = util.SerializeOrRaw(my.serializer, v)
-	var info = sendingInfo{typ: message.Push, route: route, payload: payload}
-	return my.sendMayError(info, err)
+	var msg = message.Message{Type: message.Push, Route: route, Data: payload}
+	return my.sendMayError(context.Background(), msg, err)
 }
 
-func (my *Session) sendMayError(info sendingInfo, err error) error {
+func (my *Session) sendMayError(ctx context.Context, msg message.Message, err error) error {
 	if err != nil {
-		info.hasErr = true
-		logger.Info("process failed, route=%s, err=%q", info.route, err.Error())
+		msg.Err = true
+		logger.Info("process failed, route=%s, err=%q", msg.Route, err.Error())
 
 		var err1 error
-		info.payload, err1 = util.SerializeOrRaw(my.serializer, err)
+		msg.Data, err1 = util.SerializeOrRaw(my.serializer, err)
 		if err1 != nil {
-			logger.Info("serialize failed, route=%s, err1=%q", info.route, err1.Error())
+			logger.Info("serialize failed, route=%s, err1=%q", msg.Route, err1.Error())
 			return err1
 		}
 	}
 
-	err2 := my.send(info)
+	err2 := my.sendMessage(ctx, msg)
 	if err2 != nil {
-		logger.Info("send failed, route=%s, err2=%q", info.route, err2.Error())
+		logger.Info("send failed, route=%s, err2=%q", msg.Route, err2.Error())
 		return err2
 	}
 
 	return nil
 }
 
-func (my *Session) send(info sendingInfo) error {
+func (my *Session) sendMessage(ctx context.Context, msg message.Message) error {
 	defer func() {
 		if e := recover(); e != nil {
 			logger.Info(e)
 		}
 	}()
 
-	// construct message and encode
-	msg := &message.Message{
-		Type:  info.typ,
-		Data:  info.payload,
-		Route: info.route,
-		ID:    info.mid,
-		Err:   info.hasErr,
-	}
-
 	// packet encode
-	p, err := my.packetEncodeMessage(msg)
+	p, err := my.packetEncodeMessage(&msg)
 	if err != nil {
 		return err
 	}
 
 	item := sendingItem{
-		ctx:  info.ctx,
+		ctx:  ctx,
 		data: p,
 	}
 
-	if info.hasErr {
+	if msg.Err {
 		item.err = fmt.Errorf("has pending error")
 	}
 
