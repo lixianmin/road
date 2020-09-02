@@ -34,7 +34,7 @@ func (my *Session) processReceived(item receivedItem) {
 	if item.msg.Type != message.Notify {
 		if err != nil {
 			logger.Info("failed to process message, route=%s, err=%q", item.route, err.Error())
-			payload1, err1 := serializeReturn(my.serializer, err)
+			payload1, err1 := util.SerializeOrRaw(my.serializer, err)
 			if err1 != nil {
 				logger.Info("err1=%q", err1)
 				return
@@ -76,7 +76,7 @@ func processReceivedImpl(data receivedItem, serializer serialize.Serializer) ([]
 		return nil, err
 	}
 
-	ret, err := serializeReturn(serializer, resp)
+	ret, err := util.SerializeOrRaw(serializer, resp)
 	if err != nil {
 		return nil, err
 	}
@@ -99,17 +99,4 @@ func unmarshalHandlerArg(handler *component.Handler, serializer serialize.Serial
 	}
 
 	return arg, nil
-}
-
-func serializeReturn(serializer serialize.Serializer, v interface{}) ([]byte, error) {
-	if data, ok := v.([]byte); ok {
-		return data, nil
-	}
-
-	data, err := serializer.Marshal(v)
-	if err != nil {
-		return nil, err
-	}
-
-	return data, nil
 }

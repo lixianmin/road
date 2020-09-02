@@ -48,10 +48,15 @@ func (my *Session) goSend(later *loom.Later) {
 }
 
 func (my *Session) Push(route string, v interface{}) error {
-	return my.send(sendingInfo{typ: message.Push, route: route, payload: v})
+	var payload, err = util.SerializeOrRaw(my.serializer, v)
+	if err != nil {
+		return err
+	}
+
+	return my.send(sendingInfo{typ: message.Push, route: route, payload: payload})
 }
 
-func (my *Session) responseMID(ctx context.Context, mid uint, payload interface{}, hasErr bool) error {
+func (my *Session) responseMID(ctx context.Context, mid uint, payload []byte, hasErr bool) error {
 	return my.send(sendingInfo{ctx: ctx, typ: message.Response, mid: mid, payload: payload, hasErr: hasErr})
 }
 
@@ -62,22 +67,17 @@ func (my *Session) send(info sendingInfo) error {
 		}
 	}()
 
-	payload, err := util.SerializeOrRaw(my.serializer, info.payload)
-	if err != nil {
-		return err
-	}
-
 	// construct message and encode
-	m := &message.Message{
+	msg := &message.Message{
 		Type:  info.typ,
-		Data:  payload,
+		Data:  info.payload,
 		Route: info.route,
 		ID:    info.mid,
 		Err:   info.hasErr,
 	}
 
 	// packet encode
-	p, err := my.packetEncodeMessage(m)
+	p, err := my.packetEncodeMessage(msg)
 	if err != nil {
 		return err
 	}

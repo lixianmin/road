@@ -70,7 +70,7 @@ type (
 		typ     message.Type // message type
 		route   string       // message route (push)
 		mid     uint         // response message id (response)
-		payload interface{}  // payload
+		payload []byte       // payload
 		hasErr  bool         // if its an error message
 	}
 )
