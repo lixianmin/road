@@ -14,6 +14,15 @@ type Error struct {
 	Message string `json:"message"`
 }
 
+func NewError(code string, format string, args ...interface{}) *Error {
+	var err = &Error{
+		Code:    code,
+		Message: fmt.Sprintf(format, args...),
+	}
+
+	return err
+}
+
 func (err *Error) Error() string {
 	return fmt.Sprintf("code=%q message=%q", err.Code, err.Message)
 }
@@ -24,7 +33,7 @@ func checkCreateError(err error) *Error {
 	}
 
 	var err2 = &Error{
-		Code:    "unknown",
+		Code:    "PlainError",
 		Message: err.Error(),
 	}
 
