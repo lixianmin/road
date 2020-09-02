@@ -1,12 +1,12 @@
 package bugfly
 
 import (
+	"github.com/lixianmin/got/loom"
 	"github.com/lixianmin/road/component"
 	"github.com/lixianmin/road/conn/message"
 	"github.com/lixianmin/road/serialize"
 	"github.com/lixianmin/road/service"
 	"github.com/lixianmin/road/util"
-	"github.com/lixianmin/got/loom"
 	"reflect"
 )
 
@@ -49,9 +49,11 @@ func processReceivedImpl(data receivedItem, serializer serialize.Serializer) ([]
 		return nil, err
 	}
 
-	args := []reflect.Value{handler.Receiver, reflect.ValueOf(data.ctx)}
+	var args []reflect.Value
 	if arg != nil {
-		args = append(args, reflect.ValueOf(arg))
+		args = []reflect.Value{handler.Receiver, reflect.ValueOf(data.ctx), reflect.ValueOf(arg)}
+	} else {
+		args = []reflect.Value{handler.Receiver, reflect.ValueOf(data.ctx)}
 	}
 
 	resp, err := util.Pcall(handler.Method, args)

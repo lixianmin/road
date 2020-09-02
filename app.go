@@ -2,6 +2,7 @@ package bugfly
 
 import (
 	"encoding/json"
+	"github.com/lixianmin/got/loom"
 	"github.com/lixianmin/road/acceptor"
 	"github.com/lixianmin/road/component"
 	"github.com/lixianmin/road/conn/codec"
@@ -11,7 +12,6 @@ import (
 	"github.com/lixianmin/road/serialize"
 	"github.com/lixianmin/road/service"
 	"github.com/lixianmin/road/util/compression"
-	"github.com/lixianmin/got/loom"
 	"time"
 )
 
