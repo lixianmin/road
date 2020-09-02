@@ -1,7 +1,6 @@
 package bugfly
 
 import (
-	"context"
 	"fmt"
 	"github.com/lixianmin/bugfly/conn/message"
 	"github.com/lixianmin/bugfly/conn/packet"
@@ -49,15 +48,30 @@ func (my *Session) goSend(later *loom.Later) {
 
 func (my *Session) Push(route string, v interface{}) error {
 	var payload, err = util.SerializeOrRaw(my.serializer, v)
-	if err != nil {
-		return err
-	}
-
-	return my.send(sendingInfo{typ: message.Push, route: route, payload: payload})
+	var info = sendingInfo{typ: message.Push, route: route, payload: payload}
+	return my.sendMayError(info, err)
 }
 
-func (my *Session) responseMID(ctx context.Context, mid uint, payload []byte, hasErr bool) error {
-	return my.send(sendingInfo{ctx: ctx, typ: message.Response, mid: mid, payload: payload, hasErr: hasErr})
+func (my *Session) sendMayError(info sendingInfo, err error) error {
+	if err != nil {
+		info.hasErr = true
+		logger.Info("process failed, route=%s, err=%q", info.route, err.Error())
+
+		var err1 error
+		info.payload, err1 = util.SerializeOrRaw(my.serializer, err)
+		if err1 != nil {
+			logger.Info("serialize failed, route=%s, err1=%q", info.route, err1.Error())
+			return err1
+		}
+	}
+
+	err2 := my.send(info)
+	if err2 != nil {
+		logger.Info("send failed, route=%s, err2=%q", info.route, err2.Error())
+		return err2
+	}
+
+	return nil
 }
 
 func (my *Session) send(info sendingInfo) error {

@@ -3,7 +3,6 @@ package bugfly
 import (
 	"github.com/lixianmin/bugfly/component"
 	"github.com/lixianmin/bugfly/conn/message"
-	"github.com/lixianmin/bugfly/logger"
 	"github.com/lixianmin/bugfly/serialize"
 	"github.com/lixianmin/bugfly/service"
 	"github.com/lixianmin/bugfly/util"
@@ -32,24 +31,8 @@ func (my *Session) goProcess(later *loom.Later) {
 func (my *Session) processReceived(item receivedItem) {
 	payload, err := processReceivedImpl(item, my.serializer)
 	if item.msg.Type != message.Notify {
-		if err != nil {
-			logger.Info("failed to process message, route=%s, err=%q", item.route, err.Error())
-			payload1, err1 := util.SerializeOrRaw(my.serializer, err)
-			if err1 != nil {
-				logger.Info("err1=%q", err1)
-				return
-			}
-
-			err2 := my.responseMID(item.ctx, item.msg.ID, payload1, true)
-			if err2 != nil {
-				logger.Info("err=%q", err2)
-			}
-		} else {
-			err1 := my.responseMID(item.ctx, item.msg.ID, payload, false)
-			if err1 != nil {
-				logger.Info("err=%q", err1)
-			}
-		}
+		var info = sendingInfo{ctx: item.ctx, typ: message.Response, mid: item.msg.ID, payload: payload}
+		_ = my.sendMayError(info, err)
 	}
 }
 
