@@ -1,10 +1,10 @@
 package main
 
 import (
+	"github.com/lixianmin/logo"
 	"github.com/lixianmin/road"
 	"github.com/lixianmin/road/acceptor"
 	"github.com/lixianmin/road/component"
-	"github.com/lixianmin/logo"
 	"strings"
 )
 
@@ -18,7 +18,7 @@ Copyright (C) - All Rights Reserved
 func main() {
 	logo.GetLogger().SetFilterLevel(logo.LevelDebug)
 	var accept = acceptor.NewWSAcceptor(":8880")
-	var app = bugfly.NewApp(bugfly.AppArgs{
+	var app = road.NewApp(road.AppArgs{
 		Acceptor: accept,
 	})
 
