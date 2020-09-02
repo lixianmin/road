@@ -57,8 +57,11 @@ func (my *Session) sendMessageMayError(ctx context.Context, msg message.Message,
 		msg.Err = true
 		logger.Info("process failed, route=%s, err=%q", msg.Route, err.Error())
 
+		// err需要支持json序列化的话，就不能是一个简单的字符串
+		var errWrap = checkCreateError(err)
+
 		var err1 error
-		msg.Data, err1 = util.SerializeOrRaw(my.serializer, err)
+		msg.Data, err1 = util.SerializeOrRaw(my.serializer, errWrap)
 		if err1 != nil {
 			logger.Info("serialize failed, route=%s, err1=%q", msg.Route, err1.Error())
 			return err1
