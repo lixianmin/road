@@ -2,7 +2,6 @@ package bugfly
 
 import (
 	"context"
-	"fmt"
 	"github.com/lixianmin/bugfly/conn/message"
 	"github.com/lixianmin/bugfly/conn/packet"
 	"github.com/lixianmin/bugfly/logger"
@@ -50,10 +49,10 @@ func (my *Session) goSend(later *loom.Later) {
 func (my *Session) Push(route string, v interface{}) error {
 	var payload, err = util.SerializeOrRaw(my.serializer, v)
 	var msg = message.Message{Type: message.Push, Route: route, Data: payload}
-	return my.sendMayError(context.Background(), msg, err)
+	return my.sendMessageMayError(context.Background(), msg, err)
 }
 
-func (my *Session) sendMayError(ctx context.Context, msg message.Message, err error) error {
+func (my *Session) sendMessageMayError(ctx context.Context, msg message.Message, err error) error {
 	if err != nil {
 		msg.Err = true
 		logger.Info("process failed, route=%s, err=%q", msg.Route, err.Error())
@@ -91,10 +90,6 @@ func (my *Session) sendMessage(ctx context.Context, msg message.Message) error {
 	item := sendingItem{
 		ctx:  ctx,
 		data: p,
-	}
-
-	if msg.Err {
-		item.err = fmt.Errorf("has pending error")
 	}
 
 	select {

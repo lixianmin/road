@@ -61,7 +61,6 @@ type (
 	sendingItem struct {
 		ctx  context.Context
 		data []byte
-		err  error
 	}
 )
 
