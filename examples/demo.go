@@ -17,7 +17,7 @@ Copyright (C) - All Rights Reserved
 
 func main() {
 	logo.GetLogger().SetFilterLevel(logo.LevelDebug)
-	var accept = acceptor.NewWSAcceptor(":8880")
+	var accept = acceptor.NewTCPAcceptor(":8880")
 	var app = road.NewApp(road.AppArgs{
 		Acceptor: accept,
 	})
