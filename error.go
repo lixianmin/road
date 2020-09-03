@@ -15,9 +15,14 @@ type Error struct {
 }
 
 func NewError(code string, format string, args ...interface{}) *Error {
+	var message = format
+	if len(args) > 0 {
+		message = fmt.Sprintf(format, args...)
+	}
+
 	var err = &Error{
 		Code:    code,
-		Message: fmt.Sprintf(format, args...),
+		Message: message,
 	}
 
 	return err
