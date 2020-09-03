@@ -1,7 +1,6 @@
 package road
 
 import (
-	"context"
 	"github.com/lixianmin/got/loom"
 	"github.com/lixianmin/road/conn/message"
 	"github.com/lixianmin/road/conn/packet"
@@ -35,8 +34,8 @@ func (my *Session) goSend(later *loom.Later) {
 				logger.Info("Failed to write in conn: %s", err.Error())
 				return
 			}
-		case item := <-my.sendingChan:
-			if _, err := my.conn.Write(item.data); err != nil {
+		case data := <-my.sendingChan:
+			if _, err := my.conn.Write(data); err != nil {
 				logger.Info("Failed to write in conn: %s", err.Error())
 				return
 			}
@@ -49,7 +48,7 @@ func (my *Session) goSend(later *loom.Later) {
 func (my *Session) Push(route string, v interface{}) error {
 	var payload, err = util.SerializeOrRaw(my.serializer, v)
 	var msg = message.Message{Type: message.Push, Route: route, Data: payload}
-	return my.sendMessageMayError(context.Background(), msg, err)
+	return my.sendMessageMayError(msg, err)
 }
 
 // 强踢下线
@@ -59,11 +58,11 @@ func (my *Session) Kick() error {
 		return err
 	}
 
-	_, err = my.conn.Write(p)
-	return err
+	my.sendBytes(p)
+	return nil
 }
 
-func (my *Session) sendMessageMayError(ctx context.Context, msg message.Message, err error) error {
+func (my *Session) sendMessageMayError(msg message.Message, err error) error {
 	if err != nil {
 		msg.Err = true
 		logger.Info("process failed, route=%s, err=%q", msg.Route, err.Error())
@@ -79,7 +78,7 @@ func (my *Session) sendMessageMayError(ctx context.Context, msg message.Message,
 		}
 	}
 
-	err2 := my.sendMessage(ctx, msg)
+	err2 := my.sendMessage(msg)
 	if err2 != nil {
 		logger.Info("send failed, route=%s, err2=%q", msg.Route, err2.Error())
 		return err2
@@ -88,12 +87,12 @@ func (my *Session) sendMessageMayError(ctx context.Context, msg message.Message,
 	return nil
 }
 
-func (my *Session) sendMessage(ctx context.Context, msg message.Message) error {
-	defer func() {
-		if e := recover(); e != nil {
-			logger.Info(e)
-		}
-	}()
+func (my *Session) sendMessage(msg message.Message) error {
+	//defer func() {
+	//	if e := recover(); e != nil {
+	//		logger.Info(e)
+	//	}
+	//}()
 
 	// packet encode
 	p, err := my.packetEncodeMessage(&msg)
@@ -101,17 +100,19 @@ func (my *Session) sendMessage(ctx context.Context, msg message.Message) error {
 		return err
 	}
 
-	item := sendingItem{
-		ctx:  ctx,
-		data: p,
+	my.sendBytes(p)
+	return nil
+}
+
+func (my *Session) sendBytes(data []byte) {
+	if len(data) == 0 {
+		return
 	}
 
 	select {
+	case my.sendingChan <- data:
 	case <-my.wc.C():
-	case my.sendingChan <- item:
 	}
-
-	return nil
 }
 
 func (my *Session) packetEncodeMessage(msg *message.Message) ([]byte, error) {

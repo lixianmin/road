@@ -32,7 +32,7 @@ func (my *Session) processReceived(item receivedItem) {
 	payload, err := processReceivedImpl(item, my.serializer)
 	if item.msg.Type != message.Notify {
 		var msg = message.Message{Type: message.Response, ID: item.msg.ID, Data: payload}
-		_ = my.sendMessageMayError(item.ctx, msg, err)
+		_ = my.sendMessageMayError(msg, err)
 	}
 }
 

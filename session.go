@@ -43,7 +43,7 @@ type (
 		id           int64
 		conn         acceptor.PlayerConn
 		attachment   *Attachment
-		sendingChan  chan sendingItem
+		sendingChan  chan []byte
 		receivedChan chan receivedItem
 		lastAt       int64 // last heartbeat unix time stamp
 		wc           loom.WaitClose
@@ -57,11 +57,6 @@ type (
 		route *route.Route
 		msg   *message.Message
 	}
-
-	sendingItem struct {
-		ctx  context.Context
-		data []byte
-	}
 )
 
 func NewSession(conn acceptor.PlayerConn, args commonSessionArgs) *Session {
@@ -71,7 +66,7 @@ func NewSession(conn acceptor.PlayerConn, args commonSessionArgs) *Session {
 		id:                atomic.AddInt64(&idGenerator, 1),
 		conn:              conn,
 		attachment:        &Attachment{},
-		sendingChan:       make(chan sendingItem, bufferSize),
+		sendingChan:       make(chan []byte, bufferSize),
 		receivedChan:      make(chan receivedItem, bufferSize),
 		lastAt:            time.Now().Unix(),
 	}

@@ -2,12 +2,12 @@ package road
 
 import (
 	"context"
+	"github.com/lixianmin/got/loom"
 	"github.com/lixianmin/road/conn/message"
 	"github.com/lixianmin/road/conn/packet"
 	"github.com/lixianmin/road/ifs"
 	"github.com/lixianmin/road/logger"
 	"github.com/lixianmin/road/route"
-	"github.com/lixianmin/got/loom"
 	"sync/atomic"
 	"time"
 )
@@ -79,12 +79,7 @@ func (my *Session) onReceivedPacket(p *packet.Packet) (receivedItem, error) {
 }
 
 func (my *Session) onReceivedHandshake(p *packet.Packet) (receivedItem, error) {
-	_, err := my.conn.Write(my.handshakeResponseData)
-	if err != nil {
-		return receivedItem{}, err
-	}
-
-	//logger.Debug("Received handshake packet")
+	my.sendBytes(my.handshakeResponseData)
 	return receivedItem{}, nil
 }
 
