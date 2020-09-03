@@ -2,11 +2,11 @@ package road
 
 import (
 	"context"
+	"github.com/lixianmin/got/loom"
 	"github.com/lixianmin/road/conn/message"
 	"github.com/lixianmin/road/conn/packet"
 	"github.com/lixianmin/road/logger"
 	"github.com/lixianmin/road/util"
-	"github.com/lixianmin/got/loom"
 	"sync/atomic"
 	"time"
 )
@@ -50,6 +50,17 @@ func (my *Session) Push(route string, v interface{}) error {
 	var payload, err = util.SerializeOrRaw(my.serializer, v)
 	var msg = message.Message{Type: message.Push, Route: route, Data: payload}
 	return my.sendMessageMayError(context.Background(), msg, err)
+}
+
+// 强踢下线
+func (my *Session) Kick() error {
+	p, err := my.packetEncoder.Encode(packet.Kick, nil)
+	if err != nil {
+		return err
+	}
+
+	_, err = my.conn.Write(p)
+	return err
 }
 
 func (my *Session) sendMessageMayError(ctx context.Context, msg message.Message, err error) error {

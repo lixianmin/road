@@ -2,13 +2,13 @@ package road
 
 import (
 	"context"
+	"github.com/lixianmin/got/loom"
 	"github.com/lixianmin/road/acceptor"
 	"github.com/lixianmin/road/conn/codec"
 	"github.com/lixianmin/road/conn/message"
 	"github.com/lixianmin/road/logger"
 	"github.com/lixianmin/road/route"
 	"github.com/lixianmin/road/serialize"
-	"github.com/lixianmin/got/loom"
 	"net"
 	"sync"
 	"sync/atomic"
