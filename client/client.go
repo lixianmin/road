@@ -274,7 +274,7 @@ func (c *Client) readPackets(buf *bytes.Buffer) ([]*packet.Packet, error) {
 	}
 	packets, err := c.packetDecoder.Decode(buf.Bytes())
 	if err != nil {
-		logger.Log.Errorf("error decoding packet from server: %s", err.Error())
+		logger.Info("error decoding packet from server: %s", err.Error())
 	}
 	totalProcessed := 0
 	for _, p := range packets {
