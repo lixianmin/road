@@ -167,3 +167,15 @@ func (my *App) heartbeatDataEncode(dataCompression bool) {
 		panic(err)
 	}
 }
+
+// Documentation returns handler and remotes documentacion
+func (my *App) Documentation(getPtrNames bool) (map[string]interface{}, error) {
+	handlerDocs, err := my.handlerService.Docs(getPtrNames)
+	if err != nil {
+		return nil, err
+	}
+
+	return map[string]interface{}{
+		"handlers": handlerDocs,
+	}, nil
+}

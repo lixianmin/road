@@ -2,6 +2,7 @@ package service
 
 import (
 	"fmt"
+	"github.com/lixianmin/road/docgenerator"
 	"github.com/lixianmin/road/logger"
 	"github.com/lixianmin/road/component"
 )
@@ -49,4 +50,13 @@ func (my *HandlerService) Register(comp component.Component, opts []component.Op
 	}
 
 	return nil
+}
+
+// Docs returns documentation for handlers
+func (my *HandlerService) Docs(getPtrNames bool) (map[string]interface{}, error) {
+	if my == nil {
+		return map[string]interface{}{}, nil
+	}
+
+	return docgenerator.HandlersDocs("game", my.services, getPtrNames)
 }
