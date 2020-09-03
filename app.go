@@ -33,7 +33,7 @@ type (
 		handlerService *service.HandlerService
 	}
 
-	AppLoopArgs struct {
+	appLoopArgs struct {
 		onSessionConnectedCallbacks []func(*Session)
 	}
 )
@@ -69,7 +69,7 @@ func checkAppArgs(args *AppArgs) {
 }
 
 func (my *App) goLoop(later *loom.Later) {
-	var args = &AppLoopArgs{
+	var args = &appLoopArgs{
 	}
 
 	for {
@@ -94,7 +94,7 @@ func (my *App) Register(c component.Component, options ...component.Option) {
 	}
 }
 
-func (my *App) onNewSession(fetus *AppLoopArgs, conn acceptor.PlayerConn) {
+func (my *App) onNewSession(fetus *appLoopArgs, conn acceptor.PlayerConn) {
 	var session = NewSession(conn, my.commonSessionArgs)
 
 	var id = session.Id()
@@ -125,7 +125,7 @@ func (my *App) OnSessionConnected(callback func(*Session)) {
 	}
 
 	my.tasks.SendCallback(func(args interface{}) (result interface{}, err error) {
-		var fetus = args.(*AppLoopArgs)
+		var fetus = args.(*appLoopArgs)
 		fetus.onSessionConnectedCallbacks = append(fetus.onSessionConnectedCallbacks, callback)
 		return nil, nil
 	})
