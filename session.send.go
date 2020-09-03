@@ -78,29 +78,13 @@ func (my *Session) sendMessageMayError(msg message.Message, err error) error {
 		}
 	}
 
-	err2 := my.sendMessage(msg)
+	data, err2 := my.packetEncodeMessage(&msg)
 	if err2 != nil {
 		logger.Info("send failed, route=%s, err2=%q", msg.Route, err2.Error())
 		return err2
 	}
 
-	return nil
-}
-
-func (my *Session) sendMessage(msg message.Message) error {
-	//defer func() {
-	//	if e := recover(); e != nil {
-	//		logger.Info(e)
-	//	}
-	//}()
-
-	// packet encode
-	p, err := my.packetEncodeMessage(&msg)
-	if err != nil {
-		return err
-	}
-
-	my.sendBytes(p)
+	my.sendBytes(data)
 	return nil
 }
 
