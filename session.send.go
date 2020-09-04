@@ -46,6 +46,10 @@ func (my *Session) goSend(later *loom.Later) {
 }
 
 func (my *Session) Push(route string, v interface{}) error {
+	if my.wc.IsClosed() {
+		return nil
+	}
+
 	var payload, err = util.SerializeOrRaw(my.serializer, v)
 	var msg = message.Message{Type: message.Push, Route: route, Data: payload}
 	return my.sendMessageMayError(msg, err)
@@ -53,6 +57,10 @@ func (my *Session) Push(route string, v interface{}) error {
 
 // 强踢下线
 func (my *Session) Kick() error {
+	if my.wc.IsClosed() {
+		return nil
+	}
+
 	p, err := my.packetEncoder.Encode(packet.Kick, nil)
 	if err != nil {
 		return err
