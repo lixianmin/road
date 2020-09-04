@@ -4,11 +4,9 @@ import (
 	"context"
 	"github.com/lixianmin/got/loom"
 	"github.com/lixianmin/road/acceptor"
-	"github.com/lixianmin/road/conn/codec"
 	"github.com/lixianmin/road/conn/message"
 	"github.com/lixianmin/road/logger"
 	"github.com/lixianmin/road/route"
-	"github.com/lixianmin/road/serialize"
 	"net"
 	"sync"
 	"sync/atomic"
@@ -27,17 +25,6 @@ var (
 )
 
 type (
-	commonSessionArgs struct {
-		packetEncoder  codec.PacketEncoder
-		packetDecoder  codec.PacketDecoder
-		messageEncoder message.Encoder
-		serializer     serialize.Serializer
-
-		heartbeatTimeout      time.Duration
-		heartbeatPacketData   []byte
-		handshakeResponseData []byte
-	}
-
 	Session struct {
 		commonSessionArgs
 		id           int64

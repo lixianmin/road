@@ -1,17 +1,11 @@
 package road
 
 import (
-	"encoding/json"
 	"github.com/lixianmin/got/loom"
 	"github.com/lixianmin/road/acceptor"
 	"github.com/lixianmin/road/component"
-	"github.com/lixianmin/road/conn/codec"
-	"github.com/lixianmin/road/conn/message"
-	"github.com/lixianmin/road/conn/packet"
 	"github.com/lixianmin/road/logger"
-	"github.com/lixianmin/road/serialize"
 	"github.com/lixianmin/road/service"
-	"github.com/lixianmin/road/util/compression"
 	"time"
 )
 
@@ -25,7 +19,7 @@ Copyright (C) - All Rights Reserved
 type (
 	App struct {
 		commonSessionArgs
-		acceptor acceptor.Acceptor
+		accept   acceptor.Acceptor
 		sessions loom.Map
 		wc       loom.WaitClose
 		tasks    *loom.TaskChan
@@ -42,22 +36,13 @@ func NewApp(args AppArgs) *App {
 	checkAppArgs(&args)
 	logger.Init(args.Logger)
 
-	var common = commonSessionArgs{
-		packetDecoder:    codec.NewPomeloPacketDecoder(),
-		packetEncoder:    codec.NewPomeloPacketEncoder(),
-		messageEncoder:   message.NewMessagesEncoder(args.DataCompression),
-		serializer:       serialize.NewJsonSerializer(),
-		heartbeatTimeout: args.HeartbeatTimeout,
-	}
-
 	var app = &App{
-		commonSessionArgs: common,
-		acceptor:          args.Acceptor,
+		commonSessionArgs: *newCommonSessionArgs(args.DataCompression, args.HeartbeatTimeout),
+		accept:            args.Acceptor,
 		handlerService:    service.NewHandlerService(),
 	}
 
 	app.tasks = loom.NewTaskChan(app.wc.C())
-	app.heartbeatDataEncode(args.DataCompression)
 	loom.Go(app.goLoop)
 	return app
 }
@@ -74,7 +59,7 @@ func (my *App) goLoop(later *loom.Later) {
 
 	for {
 		select {
-		case conn := <-my.acceptor.GetConnChan():
+		case conn := <-my.accept.GetConnChan():
 			my.onNewSession(args, conn)
 		case task := <-my.tasks.C:
 			var err = task.Do(args)
@@ -129,43 +114,6 @@ func (my *App) OnSessionConnected(callback func(*Session)) {
 		fetus.onSessionConnectedCallbacks = append(fetus.onSessionConnectedCallbacks, callback)
 		return nil, nil
 	})
-}
-
-func (my *App) heartbeatDataEncode(dataCompression bool) {
-	hData := map[string]interface{}{
-		"code": 200,
-		"sys": map[string]interface{}{
-			"heartbeat":  my.heartbeatTimeout.Seconds(),
-			"dict":       message.GetDictionary(),
-			"serializer": my.serializer.GetName(),
-		},
-	}
-
-	data, err := json.Marshal(hData)
-	if err != nil {
-		panic(err)
-	}
-
-	if dataCompression {
-		compressedData, err := compression.DeflateData(data)
-		if err != nil {
-			panic(err)
-		}
-
-		if len(compressedData) < len(data) {
-			data = compressedData
-		}
-	}
-
-	my.handshakeResponseData, err = my.packetEncoder.Encode(packet.Handshake, data)
-	if err != nil {
-		panic(err)
-	}
-
-	my.heartbeatPacketData, err = my.packetEncoder.Encode(packet.Heartbeat, nil)
-	if err != nil {
-		panic(err)
-	}
 }
 
 // Documentation returns handler and remotes documentacion
