@@ -9,5 +9,5 @@ Copyright (C) - All Rights Reserved
 
 type Acceptor interface {
 	GetConnChan() chan PlayerConn
-	ListenAndServe()
+	//ListenAndServe()
 }
