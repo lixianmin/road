@@ -66,7 +66,7 @@ func (my *Session) goReceive(later *loom.Later) {
 func (my *Session) onReceivedPacket(p *packet.Packet) (receivedItem, error) {
 	switch p.Type {
 	case packet.Handshake:
-		return my.onReceivedHandshake(p)
+		my.onReceivedHandshake(p)
 	case packet.HandshakeAck:
 		logger.Debug("Receive handshake ACK")
 	case packet.Data:
@@ -78,9 +78,9 @@ func (my *Session) onReceivedPacket(p *packet.Packet) (receivedItem, error) {
 	return receivedItem{}, nil
 }
 
-func (my *Session) onReceivedHandshake(p *packet.Packet) (receivedItem, error) {
+func (my *Session) onReceivedHandshake(p *packet.Packet) {
 	my.sendBytes(my.handshakeResponseData)
-	return receivedItem{}, nil
+	my.onHandShaken.Invoke()
 }
 
 func (my *Session) onReceivedDataPacket(p *packet.Packet) (receivedItem, error) {

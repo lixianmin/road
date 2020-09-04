@@ -5,10 +5,8 @@ import (
 	"github.com/lixianmin/got/loom"
 	"github.com/lixianmin/road/acceptor"
 	"github.com/lixianmin/road/conn/message"
-	"github.com/lixianmin/road/logger"
 	"github.com/lixianmin/road/route"
 	"net"
-	"sync"
 	"sync/atomic"
 	"time"
 )
@@ -35,8 +33,8 @@ type (
 		lastAt       int64 // last heartbeat unix time stamp
 		wc           loom.WaitClose
 
-		onClosedCallbacks []func()
-		lock              sync.Mutex
+		onHandShaken delegate
+		onClosed     delegate
 	}
 
 	receivedItem struct {
@@ -68,39 +66,16 @@ func (my *Session) Close() {
 	my.wc.Close(func() {
 		_ = my.conn.Close()
 		my.attachment.dispose()
-		my.invokeOnClosedCallbacks()
+		my.onClosed.Invoke()
 	})
 }
 
-func (my *Session) invokeOnClosedCallbacks() {
-	var cloned = make([]func(), len(my.onClosedCallbacks))
-
-	// 单独clone一份出来，因为callback的方法体调用了哪些内容未知，防止循环调用导致死循环
-	my.lock.Lock()
-	for i, callback := range my.onClosedCallbacks {
-		cloned[i] = callback
-	}
-	my.lock.Unlock()
-
-	defer func() {
-		if r := recover(); r != nil {
-			logger.Info("[invokeOnClosedCallbacks()] panic: r=%v", r)
-		}
-	}()
-
-	for _, callback := range cloned {
-		callback()
-	}
+func (my *Session) OnHandShaken(handler func()) {
+	my.onHandShaken.Add(handler)
 }
 
-func (my *Session) OnClosed(callback func()) {
-	if callback == nil {
-		return
-	}
-
-	my.lock.Lock()
-	my.onClosedCallbacks = append(my.onClosedCallbacks, callback)
-	my.lock.Unlock()
+func (my *Session) OnClosed(handler func()) {
+	my.onClosed.Add(handler)
 }
 
 func (my *Session) Id() int64 {

@@ -28,7 +28,7 @@ type (
 	}
 
 	appLoopArgs struct {
-		onSessionConnectedCallbacks []func(*Session)
+		onConnectedHandlers []func(*Session)
 	}
 )
 
@@ -98,20 +98,20 @@ func (my *App) onNewSession(fetus *appLoopArgs, conn acceptor.PlayerConn) {
 			}
 		}()
 
-		for _, callback := range fetus.onSessionConnectedCallbacks {
-			callback(session)
+		for _, handler := range fetus.onConnectedHandlers {
+			handler(session)
 		}
 	}
 }
 
-func (my *App) OnSessionConnected(callback func(*Session)) {
-	if callback == nil {
+func (my *App) OnConnected(handler func(*Session)) {
+	if handler == nil {
 		return
 	}
 
 	my.tasks.SendCallback(func(args interface{}) (result interface{}, err error) {
 		var fetus = args.(*appLoopArgs)
-		fetus.onSessionConnectedCallbacks = append(fetus.onSessionConnectedCallbacks, callback)
+		fetus.onConnectedHandlers = append(fetus.onConnectedHandlers, handler)
 		return nil, nil
 	})
 }
