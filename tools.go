@@ -4,7 +4,6 @@ import (
 	"context"
 	"github.com/lixianmin/road/ifs"
 	"github.com/lixianmin/road/logger"
-	"time"
 )
 
 /********************************************************************
@@ -22,14 +21,4 @@ func GetSessionFromCtx(ctx context.Context) *Session {
 	}
 
 	return fetus.(*Session)
-}
-
-func GetBeginTimeFromCtx(ctx context.Context) time.Time {
-	fetus := ctx.Value(ifs.CtxKeyBeginTime)
-	if fetus == nil {
-		logger.Warn("ctx doesn't contain beginTime")
-		return time.Time{}
-	}
-
-	return fetus.(time.Time)
 }

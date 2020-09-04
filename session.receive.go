@@ -95,7 +95,6 @@ func (my *Session) onReceivedDataPacket(p *packet.Packet) (receivedItem, error) 
 	}
 
 	var ctx = context.WithValue(context.Background(), ifs.CtxKeySession, my)
-	ctx = context.WithValue(ctx, ifs.CtxKeyBeginTime, time.Now())
 
 	var item = receivedItem{
 		ctx:   ctx,

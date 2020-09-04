@@ -9,5 +9,4 @@ Copyright (C) - All Rights Reserved
 
 const (
 	CtxKeySession   = "session"
-	CtxKeyBeginTime = "begin_time"
 )
