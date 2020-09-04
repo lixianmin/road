@@ -28,7 +28,7 @@ type (
 	}
 
 	appLoopArgs struct {
-		onConnectedHandlers []func(*Session)
+		onHandShakenHandlers []func(*Session)
 	}
 )
 
@@ -89,29 +89,22 @@ func (my *App) onNewSession(fetus *appLoopArgs, conn acceptor.PlayerConn) {
 		my.sessions.Remove(id)
 	})
 
-	{
-		defer func() {
-			if r := recover(); r != nil {
-				if r := recover(); r != nil {
-					logger.Info("[onNewSession()] panic: r=%v", r)
-				}
-			}
-		}()
-
-		for _, handler := range fetus.onConnectedHandlers {
+	for _, handler := range fetus.onHandShakenHandlers {
+		session.onHandShaken.Add(func() {
 			handler(session)
-		}
+		})
 	}
 }
 
-func (my *App) OnConnected(handler func(*Session)) {
+// 暴露一个OnConnected()事件暂时没有看到很大的意义，因为handshake必须是第一个消息
+func (my *App) OnHandShaken(handler func(*Session)) {
 	if handler == nil {
 		return
 	}
 
 	my.tasks.SendCallback(func(args interface{}) (result interface{}, err error) {
 		var fetus = args.(*appLoopArgs)
-		fetus.onConnectedHandlers = append(fetus.onConnectedHandlers, handler)
+		fetus.onHandShakenHandlers = append(fetus.onHandShakenHandlers, handler)
 		return nil, nil
 	})
 }
