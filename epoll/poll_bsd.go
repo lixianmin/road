@@ -78,7 +78,7 @@ func (my *Poll) goLoop(later *loom.Later, bufferSize int) {
 	}
 }
 
-func (my *Poll) Close() {
+func (my *Poll) Close() error {
 	my.wc.Close(func() {
 		my.changes.Lock()
 		my.changes.d = nil
@@ -87,6 +87,8 @@ func (my *Poll) Close() {
 
 		_ = syscall.Close(my.fd)
 	})
+
+	return nil
 }
 
 // 记录当前活跃的链接，出错后通过Remove方法移除

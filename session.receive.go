@@ -22,43 +22,60 @@ Copyright (C) - All Rights Reserved
 func (my *Session) goReceive(later *loom.Later) {
 	defer my.Close()
 
+	var receivedChan = my.conn.GetReceivedChan()
+	var heartbeatTicker = later.NewTicker(my.heartbeatTimeout)
+
 	for {
-		msg, err := my.conn.GetNextMessage()
-
-		if err != nil {
-			logger.Info("Error reading next available message: %s", err.Error())
-			return
-		}
-
-		packets, err := my.packetDecoder.Decode(msg)
-		if err != nil {
-			logger.Info("Failed to decode message: %s", err.Error())
-			return
-		}
-
-		if len(packets) < 1 {
-			logger.Warn("Read no packets, data: %v", msg)
-			continue
-		}
-
-		// process all packet
-		for i := range packets {
-			var p = packets[i]
-			var item, err = my.onReceivedPacket(p)
-			if err != nil {
-				logger.Info("Failed to process packet: %s", err.Error())
+		select {
+		case <-heartbeatTicker.C:
+			deadline := time.Now().Add(-2 * my.heartbeatTimeout).Unix()
+			if atomic.LoadInt64(&my.lastAt) < deadline {
+				logger.Info("Session heartbeat timeout, LastTime=%d, Deadline=%d", atomic.LoadInt64(&my.lastAt), deadline)
 				return
 			}
 
-			if p.Type == packet.Data {
-				select {
-				case my.receivedChan <- item:
-				case <-my.wc.C():
-					return
-				}
+			if _, err := my.conn.Write(my.heartbeatPacketData); err != nil {
+				logger.Info("Failed to write in conn: %s", err.Error())
+				return
+			}
+		case data := <-my.sendingChan:
+			if _, err := my.conn.Write(data); err != nil {
+				logger.Info("Failed to write in conn: %s", err.Error())
+				return
+			}
+		case msg := <-receivedChan:
+			var err = msg.Err
+			if err != nil {
+				logger.Info("Error reading next available message: %s", err.Error())
+				return
 			}
 
-			atomic.StoreInt64(&my.lastAt, time.Now().Unix())
+			packets, err := my.packetDecoder.Decode(msg.Data)
+			if err != nil {
+				logger.Info("Failed to decode message: %s", err.Error())
+				return
+			}
+
+			if len(packets) < 1 {
+				logger.Warn("Read no packets, data: %v", msg)
+				continue
+			}
+
+			// process all packet
+			for i := range packets {
+				var p = packets[i]
+				var item, err = my.onReceivedPacket(p)
+				if err != nil {
+					logger.Info("Failed to process packet: %s", err.Error())
+					return
+				}
+
+				if p.Type == packet.Data {
+					my.processReceived(item)
+				}
+
+				atomic.StoreInt64(&my.lastAt, time.Now().Unix())
+			}
 		}
 	}
 }

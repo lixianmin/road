@@ -3,8 +3,8 @@ package road
 import (
 	"context"
 	"github.com/lixianmin/got/loom"
-	"github.com/lixianmin/road/acceptor"
 	"github.com/lixianmin/road/conn/message"
+	"github.com/lixianmin/road/epoll"
 	"github.com/lixianmin/road/route"
 	"net"
 	"sync/atomic"
@@ -26,10 +26,9 @@ type (
 	Session struct {
 		commonSessionArgs
 		id           int64
-		conn         acceptor.PlayerConn
+		conn         epoll.PlayerConn
 		attachment   *Attachment
 		sendingChan  chan []byte
-		receivedChan chan receivedItem
 		lastAt       int64 // last heartbeat unix time stamp
 		wc           loom.WaitClose
 
@@ -44,7 +43,7 @@ type (
 	}
 )
 
-func NewSession(conn acceptor.PlayerConn, args commonSessionArgs) *Session {
+func NewSession(conn epoll.PlayerConn, args commonSessionArgs) *Session {
 	const bufferSize = 16
 	var agent = &Session{
 		commonSessionArgs: args,
@@ -52,13 +51,10 @@ func NewSession(conn acceptor.PlayerConn, args commonSessionArgs) *Session {
 		conn:              conn,
 		attachment:        &Attachment{},
 		sendingChan:       make(chan []byte, bufferSize),
-		receivedChan:      make(chan receivedItem, bufferSize),
 		lastAt:            time.Now().Unix(),
 	}
 
 	loom.Go(agent.goReceive)
-	loom.Go(agent.goSend)
-	loom.Go(agent.goProcess)
 	return agent
 }
 

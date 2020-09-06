@@ -1,13 +1,10 @@
 package road
 
 import (
-	"github.com/lixianmin/got/loom"
 	"github.com/lixianmin/road/conn/message"
 	"github.com/lixianmin/road/conn/packet"
 	"github.com/lixianmin/road/logger"
 	"github.com/lixianmin/road/util"
-	"sync/atomic"
-	"time"
 )
 
 /********************************************************************
@@ -16,34 +13,6 @@ author:     lixianmin
 
 Copyright (C) - All Rights Reserved
 *********************************************************************/
-
-func (my *Session) goSend(later *loom.Later) {
-	defer my.Close()
-	var heartbeatTicker = later.NewTicker(my.heartbeatTimeout)
-
-	for {
-		select {
-		case <-heartbeatTicker.C:
-			deadline := time.Now().Add(-2 * my.heartbeatTimeout).Unix()
-			if atomic.LoadInt64(&my.lastAt) < deadline {
-				logger.Info("Session heartbeat timeout, LastTime=%d, Deadline=%d", atomic.LoadInt64(&my.lastAt), deadline)
-				return
-			}
-
-			if _, err := my.conn.Write(my.heartbeatPacketData); err != nil {
-				logger.Info("Failed to write in conn: %s", err.Error())
-				return
-			}
-		case data := <-my.sendingChan:
-			if _, err := my.conn.Write(data); err != nil {
-				logger.Info("Failed to write in conn: %s", err.Error())
-				return
-			}
-		case <-my.wc.C():
-			return
-		}
-	}
-}
 
 func (my *Session) Push(route string, v interface{}) error {
 	if my.wc.IsClosed() {

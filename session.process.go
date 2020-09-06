@@ -1,7 +1,6 @@
 package road
 
 import (
-	"github.com/lixianmin/got/loom"
 	"github.com/lixianmin/road/component"
 	"github.com/lixianmin/road/conn/message"
 	"github.com/lixianmin/road/serialize"
@@ -16,17 +15,6 @@ author:     lixianmin
 
 Copyright (C) - All Rights Reserved
 *********************************************************************/
-
-func (my *Session) goProcess(later *loom.Later) {
-	for {
-		select {
-		case data := <-my.receivedChan:
-			my.processReceived(data)
-		case <-my.wc.C():
-			return
-		}
-	}
-}
 
 func (my *Session) processReceived(item receivedItem) {
 	payload, err := processReceivedImpl(item, my.serializer)

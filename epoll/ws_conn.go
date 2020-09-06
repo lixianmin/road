@@ -30,3 +30,12 @@ func (my *WSConn) Write(b []byte) (int, error) {
 
 	return len(b), nil
 }
+
+func (my *WSConn) Close() error {
+	return my.conn.Close()
+}
+
+// RemoteAddr returns the remote bugfly address.
+func (my *WSConn) RemoteAddr() net.Addr {
+	return my.conn.RemoteAddr()
+}
