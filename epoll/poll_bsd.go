@@ -28,9 +28,15 @@ type Poll struct {
 	wc          loom.WaitClose
 
 	changes struct {
-		sync.RWMutex
-		d []syscall.Kevent_t
+		sync.Mutex // 没有必要使用RWMutex，因为只有一个goLoop()在读
+		d          []syscall.Kevent_t
 	}
+}
+
+type loopArgs struct {
+	snapshot []syscall.Kevent_t
+	events   []syscall.Kevent_t
+	timeout  syscall.Timespec
 }
 
 func NewPoll(bufferSize int) *Poll {
@@ -65,15 +71,18 @@ func NewPoll(bufferSize int) *Poll {
 
 func (my *Poll) goLoop(later *loom.Later, bufferSize int) {
 	defer my.Close()
-	var events = make([]syscall.Kevent_t, bufferSize, bufferSize)
-	var timeout = syscall.NsecToTimespec(1e9)
+	var args = &loopArgs{
+		snapshot: make([]syscall.Kevent_t, bufferSize),
+		events:   make([]syscall.Kevent_t, bufferSize),
+		timeout:  syscall.NsecToTimespec(1e9),
+	}
 
 	for {
 		select {
 		case <-my.wc.C():
 			return
 		default:
-			my.pollData(events, timeout)
+			my.pollData(args)
 		}
 	}
 }
@@ -93,8 +102,8 @@ func (my *Poll) Close() error {
 
 // 记录当前活跃的链接，出错后通过Remove方法移除
 func (my *Poll) add(conn net.Conn) *WSConn {
-
 	var fd = socketFD(conn)
+
 	var event = syscall.Kevent_t{Ident: fd, Flags: syscall.EV_ADD | syscall.EV_EOF, Filter: syscall.EVFILT_READ}
 	var receivedChan = make(chan Message, 8)
 	var playerConn *WSConn
@@ -142,11 +151,20 @@ func (my *Poll) remove(item *WSConn) {
 	_ = item.conn.Close()
 }
 
-func (my *Poll) pollData(events []syscall.Kevent_t, timeout syscall.Timespec) {
+func (my *Poll) takeSnapshot(args *loopArgs) {
+	my.changes.Lock()
+	var snapCount = len(my.changes.d)
+	args.snapshot = args.snapshot[:snapCount]
+	for i := 0; i < snapCount; i++ {
+		args.snapshot[i] = my.changes.d[i]
+	}
+	my.changes.Unlock()
+}
+
+func (my *Poll) pollData(args *loopArgs) {
 retry:
-	my.changes.RLock()
-	num, err := syscall.Kevent(my.fd, my.changes.d, events, &timeout)
-	my.changes.RUnlock()
+	my.takeSnapshot(args)
+	num, err := syscall.Kevent(my.fd, args.snapshot, args.events, &args.timeout)
 
 	if err != nil {
 		if err == syscall.EINTR {
@@ -156,12 +174,12 @@ retry:
 	}
 
 	for i := 0; i < num; i++ {
-		var ident = events[i].Ident
+		var ident = args.events[i].Ident
 		var item = my.connections.Get1(ident).(*WSConn)
 		var conn = item.conn
 
 		// EOF
-		if (events[i].Flags & syscall.EV_EOF) == syscall.EV_EOF {
+		if (args.events[i].Flags & syscall.EV_EOF) == syscall.EV_EOF {
 			item.receivedChan <- Message{Err: io.EOF}
 			my.remove(item)
 			continue
