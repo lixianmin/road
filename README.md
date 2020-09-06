@@ -1,5 +1,9 @@
-# road
+
+------
+#### 0x01 road
+
 改编自[pitaya v1.1.1](https://github.com/topfreegames/pitaya)版本的golang游戏库。
+
 
 
 
@@ -11,4 +15,15 @@
 
 
 因为，几经考虑，我决定基于pitaya的代码改一个简化的版本出来。
+
+
+
+-----
+
+#### 0x09 参考文献
+
+1. [A Million WebSockets and Go](https://www.freecodecamp.org/news/million-websockets-and-go-cc58418460bb/)
+2. https://github.com/eranyanay/1m-go-websockets
+3. https://github.com/smallnest/epoller
+4. https://github.com/smallnest/1m-go-tcp-server/
 
