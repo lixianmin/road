@@ -74,7 +74,7 @@ func (my *Poll) goLoop(later *loom.Later, bufferSize int) {
 	var args = &loopArgs{
 		snapshot: make([]syscall.Kevent_t, bufferSize),
 		events:   make([]syscall.Kevent_t, bufferSize),
-		timeout:  syscall.NsecToTimespec(1e9),
+		timeout:  syscall.NsecToTimespec(1e8), // 将超时时间改为100ms，这其实是上一轮没有数据时，下一轮fd们的最长等待时间
 	}
 
 	for {
