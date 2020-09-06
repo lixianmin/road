@@ -20,7 +20,7 @@ func socketFD(conn net.Conn) uint64 {
 	fdVal := tcpConn.FieldByName("fd")
 	pfdVal := reflect.Indirect(fdVal).FieldByName("pfd")
 
-	return pfdVal.FieldByName("Sysfd").Uint()
+	return uint64(pfdVal.FieldByName("Sysfd").Int())
 }
 
 func checkReceivedMsgBytes(msgBytes []byte) (error) {
