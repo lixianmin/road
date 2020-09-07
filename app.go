@@ -36,9 +36,12 @@ func NewApp(args AppArgs) *App {
 	checkAppArgs(&args)
 	logger.Init(args.Logger)
 
+	var accept = epoll.NewAcceptor(epoll.AcceptorArgs{})
+	args.ServeMux.HandleFunc(args.ServePath, accept.ServeHTTP)
+
 	var app = &App{
 		commonSessionArgs: *newCommonSessionArgs(args.DataCompression, args.HeartbeatTimeout),
-		accept:            args.Acceptor,
+		accept:            accept,
 		handlerService:    service.NewHandlerService(),
 	}
 

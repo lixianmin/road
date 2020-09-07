@@ -4,7 +4,6 @@ import (
 	"github.com/lixianmin/logo"
 	"github.com/lixianmin/road"
 	"github.com/lixianmin/road/component"
-	"github.com/lixianmin/road/epoll"
 	"net/http"
 	"strings"
 )
@@ -18,12 +17,11 @@ Copyright (C) - All Rights Reserved
 
 func main() {
 	logo.GetLogger().SetFilterLevel(logo.LevelDebug)
-	var accept = epoll.NewAcceptor(epoll.AcceptorArgs{})
+	var mux = http.NewServeMux()
 	var app = road.NewApp(road.AppArgs{
-		Acceptor: accept,
+		ServeMux:  mux,
+		ServePath: "/",
 	})
-
-	http.Handle("/", accept)
 
 	var room = &Room{}
 	app.Register(room, component.WithName("room"), component.WithNameFunc(strings.ToLower))
