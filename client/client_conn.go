@@ -3,24 +3,44 @@ package client
 import (
 	"github.com/gobwas/ws"
 	"github.com/gobwas/ws/wsutil"
+	"io"
 	"net"
 	"time"
 )
 
 /********************************************************************
-created:    2020-09-06
+created:    2020-09-07
 author:     lixianmin
 
 Copyright (C) - All Rights Reserved
 *********************************************************************/
 
 type clientConn struct {
-	conn net.Conn
+	conn   net.Conn
+	reader io.Reader
 }
 
 func (my *clientConn) Read(b []byte) (int, error) {
-	var reader = wsutil.NewReader(my.conn, ws.StateClientSide)
-	return reader.Read(b)
+	if my.reader == nil {
+		_, r, err := wsutil.NextReader(my.conn, ws.StateClientSide)
+		if err != nil {
+			return 0, err
+		}
+		my.reader = r
+	}
+
+	n, err := my.reader.Read(b)
+	if err != nil && err != io.EOF {
+		return n, err
+	} else if err == io.EOF {
+		_, r, err := wsutil.NextReader(my.conn, ws.StateClientSide)
+		if err != nil {
+			return 0, err
+		}
+		my.reader = r
+	}
+
+	return n, nil
 }
 
 func (my *clientConn) Write(b []byte) (int, error) {
