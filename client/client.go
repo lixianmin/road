@@ -61,7 +61,7 @@ type pendingRequest struct {
 
 // Client struct
 type Client struct {
-	conn                *clientConn
+	conn                net.Conn
 	Connected           bool
 	packetEncoder       codec.PacketEncoder
 	packetDecoder       codec.PacketDecoder
