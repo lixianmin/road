@@ -3,6 +3,7 @@
 package epoll
 
 import (
+	"github.com/gobwas/ws"
 	"github.com/gobwas/ws/wsutil"
 	"github.com/lixianmin/got/loom"
 	"net"
@@ -117,7 +118,7 @@ retry:
 			continue
 		}
 
-		var data, _, err = wsutil.ReadClientData(item.conn)
+		var data, _, err = wsutil.ReadData(item.conn, ws.StateServerSide)
 		if err != nil {
 			item.receivedChan <- Message{Err: err}
 			_ = my.remove(item)

@@ -3,6 +3,7 @@
 package epoll
 
 import (
+	"github.com/gobwas/ws"
 	"github.com/gobwas/ws/wsutil"
 	"github.com/lixianmin/got/loom"
 	"io"
@@ -174,7 +175,6 @@ retry:
 	for i := 0; i < num; i++ {
 		var ident = int64(args.events[i].Ident)
 		var item = my.connections.Get1(ident).(*WSConn)
-		var conn = item.conn
 
 		// EOF
 		if (args.events[i].Flags & syscall.EV_EOF) == syscall.EV_EOF {
@@ -183,7 +183,7 @@ retry:
 			continue
 		}
 
-		var data, _, err = wsutil.ReadClientData(conn)
+		var data, _, err = wsutil.ReadData(item.conn, ws.StateServerSide)
 		if err != nil {
 			item.receivedChan <- Message{Err: err}
 			_ = my.remove(item)

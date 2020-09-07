@@ -10,6 +10,8 @@ Copyright (C) - All Rights Reserved
 *********************************************************************/
 
 type PlayerConn interface {
-	net.Conn
 	GetReceivedChan() <-chan Message
+	Write(b []byte) (int, error)
+	Close() error
+	RemoteAddr() net.Addr
 }

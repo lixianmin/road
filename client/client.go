@@ -31,7 +31,6 @@ import (
 	"github.com/lixianmin/road/conn/codec"
 	"github.com/lixianmin/road/conn/message"
 	"github.com/lixianmin/road/conn/packet"
-	"github.com/lixianmin/road/epoll"
 	"github.com/lixianmin/road/logger"
 	"github.com/lixianmin/road/session"
 	"github.com/lixianmin/road/util/compression"
@@ -62,7 +61,7 @@ type pendingRequest struct {
 
 // Client struct
 type Client struct {
-	conn                net.Conn
+	conn                *clientConn
 	Connected           bool
 	packetEncoder       codec.PacketEncoder
 	packetDecoder       codec.PacketDecoder
@@ -372,7 +371,7 @@ func (c *Client) ConnectToWS(addr string, path string, tlsConfig ...*tls.Config)
 		return err
 	}
 
-	c.conn = epoll.NewWSConn(conn, 0, nil)
+	c.conn = &clientConn{conn: conn}
 	c.IncomingMsgChan = make(chan *message.Message, 10)
 
 	if err = c.handleHandshake(); err != nil {
