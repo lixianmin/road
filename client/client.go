@@ -371,7 +371,7 @@ func (c *Client) ConnectToWS(addr string, path string, tlsConfig ...*tls.Config)
 		return err
 	}
 
-	c.conn = &clientConn{conn: conn}
+	c.conn = newClientConn(conn)
 	c.IncomingMsgChan = make(chan *message.Message, 10)
 
 	if err = c.handleHandshake(); err != nil {

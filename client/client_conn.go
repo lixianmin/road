@@ -3,7 +3,6 @@ package client
 import (
 	"github.com/gobwas/ws"
 	"github.com/gobwas/ws/wsutil"
-	"io"
 	"net"
 	"time"
 )
@@ -17,31 +16,52 @@ Copyright (C) - All Rights Reserved
 
 type clientConn struct {
 	conn   net.Conn
-	reader io.Reader
+	reader *wsutil.Reader
+}
+
+func newClientConn(conn net.Conn) *clientConn {
+	var item = &clientConn{
+		conn:   conn,
+		reader: wsutil.NewReader(conn, ws.StateClientSide),
+	}
+
+	return item
 }
 
 func (my *clientConn) Read(b []byte) (int, error) {
-	if my.reader == nil {
-		_, r, err := wsutil.NextReader(my.conn, ws.StateClientSide)
-		if err != nil {
-			return 0, err
-		}
-		my.reader = r
+	var reader = my.reader
+	var _, err = reader.NextFrame()
+	if err != nil {
+		return 0, err
 	}
 
-	n, err := my.reader.Read(b)
-	if err != nil && err != io.EOF {
-		return n, err
-	} else if err == io.EOF {
-		_, r, err := wsutil.NextReader(my.conn, ws.StateClientSide)
-		if err != nil {
-			return 0, err
-		}
-		my.reader = r
-	}
-
+	n, err := reader.Read(b)
 	return n, nil
 }
+
+// 下面这个操作流程是copy自原pitaya的client，现在已经改写成上面的代码，不知道是否会有问题
+//func (my *clientConn) Read(b []byte) (int, error) {
+//	if my.reader == nil {
+//		_, r, err := wsutil.NextReader(my.conn, ws.StateClientSide)
+//		if err != nil {
+//			return 0, err
+//		}
+//		my.reader = r
+//	}
+//
+//	n, err := my.reader.Read(b)
+//	if err != nil && err != io.EOF {
+//		return n, err
+//	} else if err == io.EOF {
+//		_, r, err := wsutil.NextReader(my.conn, ws.StateClientSide)
+//		if err != nil {
+//			return 0, err
+//		}
+//		my.reader = r
+//	}
+//
+//	return n, nil
+//}
 
 func (my *clientConn) Write(b []byte) (int, error) {
 	var err = wsutil.WriteClientBinary(my.conn, b)
