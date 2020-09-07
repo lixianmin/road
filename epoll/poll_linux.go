@@ -110,7 +110,7 @@ retry:
 	}
 
 	for i := 0; i < n; i++ {
-		var fd = int(events[i].Fd)
+		var fd = int64(events[i].Fd)
 		var item = my.connections.Get1(fd).(*WSConn)
 		if (events[i].Events & unix.POLLHUP) == unix.POLLHUP {
 			_ = my.remove(item)

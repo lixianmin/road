@@ -172,7 +172,7 @@ retry:
 	}
 
 	for i := 0; i < num; i++ {
-		var ident = args.events[i].Ident
+		var ident = int64(args.events[i].Ident)
 		var item = my.connections.Get1(ident).(*WSConn)
 		var conn = item.conn
 
