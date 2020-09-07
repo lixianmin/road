@@ -31,6 +31,7 @@ func (my *Session) goLoop(later *loom.Later) {
 
 	var receivedChan = my.conn.GetReceivedChan()
 	var heartbeatTicker = later.NewTicker(my.heartbeatTimeout)
+	var closeChan = my.wc.C()
 
 	for {
 		select {
@@ -55,6 +56,8 @@ func (my *Session) goLoop(later *loom.Later) {
 				logger.Info(err.Error())
 				return
 			}
+		case <-closeChan:
+			return
 		}
 	}
 }
