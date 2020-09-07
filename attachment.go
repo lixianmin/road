@@ -19,9 +19,29 @@ func (my *Attachment) Put(key interface{}, value interface{}) {
 	my.table.Store(key, value)
 }
 
+func (my *Attachment) UInt32(key interface{}) uint32 {
+	if v, ok := my.Get2(key); ok {
+		if r, ok := v.(uint32); ok {
+			return r
+		}
+	}
+
+	return 0
+}
+
 func (my *Attachment) Int32(key interface{}) int32 {
 	if v, ok := my.Get2(key); ok {
 		if r, ok := v.(int32); ok {
+			return r
+		}
+	}
+
+	return 0
+}
+
+func (my *Attachment) UInt64(key interface{}) uint64 {
+	if v, ok := my.Get2(key); ok {
+		if r, ok := v.(uint64); ok {
 			return r
 		}
 	}
@@ -42,6 +62,26 @@ func (my *Attachment) Int64(key interface{}) int64 {
 func (my *Attachment) Int(key interface{}) int {
 	if v, ok := my.Get2(key); ok {
 		if r, ok := v.(int); ok {
+			return r
+		}
+	}
+
+	return 0
+}
+
+func (my *Attachment) Float32(key interface{}) float32 {
+	if v, ok := my.Get2(key); ok {
+		if r, ok := v.(float32); ok {
+			return r
+		}
+	}
+
+	return 0
+}
+
+func (my *Attachment) Float64(key interface{}) float64 {
+	if v, ok := my.Get2(key); ok {
+		if r, ok := v.(float64); ok {
 			return r
 		}
 	}
