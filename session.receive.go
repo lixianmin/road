@@ -2,12 +2,19 @@ package road
 
 import (
 	"context"
+	"fmt"
 	"github.com/lixianmin/got/loom"
+	"github.com/lixianmin/road/component"
 	"github.com/lixianmin/road/conn/message"
 	"github.com/lixianmin/road/conn/packet"
+	"github.com/lixianmin/road/epoll"
 	"github.com/lixianmin/road/ifs"
 	"github.com/lixianmin/road/logger"
 	"github.com/lixianmin/road/route"
+	"github.com/lixianmin/road/serialize"
+	"github.com/lixianmin/road/service"
+	"github.com/lixianmin/road/util"
+	"reflect"
 	"sync/atomic"
 	"time"
 )
@@ -19,7 +26,7 @@ author:     lixianmin
 Copyright (C) - All Rights Reserved
 *********************************************************************/
 
-func (my *Session) goReceive(later *loom.Later) {
+func (my *Session) goLoop(later *loom.Later) {
 	defer my.Close()
 
 	var receivedChan = my.conn.GetReceivedChan()
@@ -44,55 +51,47 @@ func (my *Session) goReceive(later *loom.Later) {
 				return
 			}
 		case msg := <-receivedChan:
-			var err = msg.Err
-			if err != nil {
-				logger.Info("Error reading next available message: %s", err.Error())
+			if err := my.onReceivedMessage(msg); err != nil {
+				logger.Info(err.Error())
 				return
-			}
-
-			packets, err := my.packetDecoder.Decode(msg.Data)
-			if err != nil {
-				logger.Info("Failed to decode message: %s", err.Error())
-				return
-			}
-
-			if len(packets) < 1 {
-				logger.Warn("Read no packets, data: %v", msg)
-				continue
-			}
-
-			// process all packet
-			for i := range packets {
-				var p = packets[i]
-				var item, err = my.onReceivedPacket(p)
-				if err != nil {
-					logger.Info("Failed to process packet: %s", err.Error())
-					return
-				}
-
-				if p.Type == packet.Data {
-					my.processReceived(item)
-				}
-
-				atomic.StoreInt64(&my.lastAt, time.Now().Unix())
 			}
 		}
 	}
 }
 
-func (my *Session) onReceivedPacket(p *packet.Packet) (receivedItem, error) {
-	switch p.Type {
-	case packet.Handshake:
-		my.onReceivedHandshake(p)
-	case packet.HandshakeAck:
-		logger.Debug("Receive handshake ACK")
-	case packet.Data:
-		return my.onReceivedDataPacket(p)
-	case packet.Heartbeat:
-		// expected
+func (my *Session) onReceivedMessage(msg epoll.Message) error {
+	var err = msg.Err
+	if err != nil {
+		var err1 = fmt.Errorf("error reading next available message: %s", err.Error())
+		return err1
 	}
 
-	return receivedItem{}, nil
+	packets, err := my.packetDecoder.Decode(msg.Data)
+	if err != nil {
+		var err1 = fmt.Errorf("failed to decode message: %s", err.Error())
+		return err1
+	}
+
+	// process all packet
+	for i := range packets {
+		var p = packets[i]
+		switch p.Type {
+		case packet.Handshake:
+			my.onReceivedHandshake(p)
+		case packet.HandshakeAck:
+			logger.Debug("Receive handshake ACK")
+		case packet.Data:
+			if err := my.onReceivedData(p); err != nil {
+				return err
+			}
+		case packet.Heartbeat:
+			// expected
+		}
+
+		atomic.StoreInt64(&my.lastAt, time.Now().Unix())
+	}
+
+	return nil
 }
 
 func (my *Session) onReceivedHandshake(p *packet.Packet) {
@@ -100,7 +99,23 @@ func (my *Session) onReceivedHandshake(p *packet.Packet) {
 	my.onHandShaken.Invoke()
 }
 
-func (my *Session) onReceivedDataPacket(p *packet.Packet) (receivedItem, error) {
+func (my *Session) onReceivedData(p *packet.Packet) error {
+	item, err := my.decodeReceivedData(p);
+	if err != nil {
+		var err1 = fmt.Errorf("failed to process packet: %s", err.Error())
+		return err1
+	}
+
+	payload, err := processReceivedData(item, my.serializer)
+	if item.msg.Type != message.Notify {
+		var msg = message.Message{Type: message.Response, ID: item.msg.ID, Data: payload}
+		_ = my.sendMessageMayError(msg, err)
+	}
+
+	return nil
+}
+
+func (my *Session) decodeReceivedData(p *packet.Packet) (receivedItem, error) {
 	msg, err := message.Decode(p.Data)
 	if err != nil {
 		return receivedItem{}, err
@@ -120,4 +135,54 @@ func (my *Session) onReceivedDataPacket(p *packet.Packet) (receivedItem, error) 
 	}
 
 	return item, nil
+}
+
+func processReceivedData(data receivedItem, serializer serialize.Serializer) ([]byte, error) {
+	handler, err := service.GetHandler(data.route)
+	if err != nil {
+		return nil, err
+	}
+
+	// First unmarshal the handler arg that will be passed to
+	// both handler and pipeline functions
+	arg, err := unmarshalHandlerArg(handler, serializer, data.msg.Data)
+	if err != nil {
+		return nil, err
+	}
+
+	var args []reflect.Value
+	if arg != nil {
+		args = []reflect.Value{handler.Receiver, reflect.ValueOf(data.ctx), reflect.ValueOf(arg)}
+	} else {
+		args = []reflect.Value{handler.Receiver, reflect.ValueOf(data.ctx)}
+	}
+
+	resp, err := util.Pcall(handler.Method, args)
+	if err != nil {
+		return nil, err
+	}
+
+	ret, err := util.SerializeOrRaw(serializer, resp)
+	if err != nil {
+		return nil, err
+	}
+
+	return ret, nil
+}
+
+func unmarshalHandlerArg(handler *component.Handler, serializer serialize.Serializer, payload []byte) (interface{}, error) {
+	if handler.IsRawArg {
+		return payload, nil
+	}
+
+	var arg interface{}
+	if handler.Type != nil {
+		arg = reflect.New(handler.Type.Elem()).Interface()
+		err := serializer.Unmarshal(payload, arg)
+		if err != nil {
+			return nil, err
+		}
+	}
+
+	return arg, nil
 }

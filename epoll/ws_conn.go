@@ -28,7 +28,7 @@ func (my *WSConn) GetReceivedChan() <-chan Message {
 func (my *WSConn) Write(b []byte) (int, error) {
 	// var err = wsutil.WriteServerBinary(my.conn, b)
 	// 等价于前面注释掉的代码
-	var frame = ws.NewFrame(ws.OpBinary, true, b)
+	var frame = ws.NewBinaryFrame(b)
 	var err = ws.WriteFrame(my.conn, frame)
 	if err != nil {
 		return 0, err

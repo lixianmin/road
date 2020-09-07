@@ -54,7 +54,7 @@ func NewSession(conn epoll.PlayerConn, args commonSessionArgs) *Session {
 		lastAt:            time.Now().Unix(),
 	}
 
-	loom.Go(agent.goReceive)
+	loom.Go(agent.goLoop)
 	return agent
 }
 
