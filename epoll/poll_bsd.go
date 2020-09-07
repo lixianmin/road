@@ -86,16 +86,15 @@ func (my *Poll) goLoop(later *loom.Later, bufferSize int) {
 }
 
 func (my *Poll) Close() error {
-	my.wc.Close(func() {
+	return my.wc.Close(func() error {
 		my.changes.Lock()
 		my.changes.d = nil
 		my.connections = loom.Map{}
 		my.changes.Unlock()
 
-		_ = syscall.Close(my.fd)
+		var err = syscall.Close(my.fd)
+		return err
 	})
-
-	return nil
 }
 
 // 记录当前活跃的链接，出错后通过Remove方法移除

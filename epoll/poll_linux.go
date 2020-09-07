@@ -65,12 +65,11 @@ func (my *Poll) goLoop(later *loom.Later, bufferSize int) {
 }
 
 func (my *Poll) Close() error {
-	my.wc.Close(func() {
+	return my.wc.Close(func() error {
 		my.connections = loom.Map{}
-		_ = unix.Close(my.fd)
+		var err = unix.Close(my.fd)
+		return err
 	})
-
-	return nil
 }
 
 func (my *Poll) add(conn net.Conn) *WSConn {

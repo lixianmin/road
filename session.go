@@ -25,12 +25,12 @@ var (
 type (
 	Session struct {
 		commonSessionArgs
-		id           int64
-		conn         epoll.PlayerConn
-		attachment   *Attachment
-		sendingChan  chan []byte
-		lastAt       int64 // last heartbeat unix time stamp
-		wc           loom.WaitClose
+		id          int64
+		conn        epoll.PlayerConn
+		attachment  *Attachment
+		sendingChan chan []byte
+		lastAt      int64 // last heartbeat unix time stamp
+		wc          loom.WaitClose
 
 		onHandShaken delegate
 		onClosed     delegate
@@ -58,11 +58,12 @@ func NewSession(conn epoll.PlayerConn, args commonSessionArgs) *Session {
 	return agent
 }
 
-func (my *Session) Close() {
-	my.wc.Close(func() {
-		_ = my.conn.Close()
+func (my *Session) Close() error {
+	return my.wc.Close(func() error {
+		var err = my.conn.Close()
 		my.attachment.dispose()
 		my.onClosed.Invoke()
+		return err
 	})
 }
 
