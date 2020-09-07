@@ -15,12 +15,12 @@ author:     lixianmin
 Copyright (C) - All Rights Reserved
 *********************************************************************/
 
-func socketFD(conn net.Conn) uint64 {
+func socketFD(conn net.Conn) int64 {
 	tcpConn := reflect.Indirect(reflect.ValueOf(conn)).FieldByName("conn")
 	fdVal := tcpConn.FieldByName("fd")
 	pfdVal := reflect.Indirect(fdVal).FieldByName("pfd")
 
-	return uint64(pfdVal.FieldByName("Sysfd").Int())
+	return pfdVal.FieldByName("Sysfd").Int()
 }
 
 func checkReceivedMsgBytes(msgBytes []byte) (error) {

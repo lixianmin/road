@@ -34,7 +34,10 @@ func (my *Acceptor) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	my.connChan <- my.poll.add(conn)
+	var item = my.poll.add(conn)
+	if item != nil {
+		my.connChan <- item
+	}
 }
 
 func (my *Acceptor) GetConnChan() chan PlayerConn {

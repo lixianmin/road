@@ -13,7 +13,7 @@ Copyright (C) - All Rights Reserved
 *********************************************************************/
 
 type WSConn struct {
-	fd           uint64
+	fd           int64
 	conn         net.Conn
 	receivedChan chan Message
 }

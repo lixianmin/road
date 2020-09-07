@@ -3,8 +3,9 @@
 package epoll
 
 import (
+	"github.com/gobwas/ws/wsutil"
+	"github.com/lixianmin/got/loom"
 	"net"
-	"sync"
 	"syscall"
 
 	"golang.org/x/sys/unix"
@@ -20,88 +21,116 @@ Copyright (C) - All Rights Reserved
 *********************************************************************/
 
 type Poll struct {
-	fd          int
-	connections map[int]net.Conn
-	lock        *sync.RWMutex
-	connbuf     []net.Conn
-	events      []unix.EpollEvent
+	receivedChanLen int
+	fd              int
+	connections     loom.Map
+	wc              loom.WaitClose
 }
 
-func NewPoll(bufferSize int) (*Poll, error) {
-	if bufferSize <= 0 {
-		bufferSize = 128
-	}
+type loopArgs struct {
+	events []unix.EpollEvent
+}
 
+func newPoll(pollBufferSize int, receivedChanLen int) *Poll {
 	fd, err := unix.EpollCreate1(0)
 	if err != nil {
-		return nil, err
+		return nil
 	}
 
-	return &Poll{
-		fd:          fd,
-		lock:        &sync.RWMutex{},
-		connections: make(map[int]net.Conn),
-		connbuf:     make([]net.Conn, bufferSize, bufferSize),
-		events:      make([]unix.EpollEvent, bufferSize, bufferSize),
-	}, nil
+	var poll = &Poll{
+		receivedChanLen: receivedChanLen,
+		fd:              fd,
+	}
+
+	loom.Go(func(later *loom.Later) {
+		poll.goLoop(later, pollBufferSize)
+	})
+	return poll
 }
 
-func (e *Poll) Close() error {
-	e.lock.Lock()
-	defer e.lock.Unlock()
+func (my *Poll) goLoop(later *loom.Later, bufferSize int) {
+	defer my.Close()
+	var args = &loopArgs{
+		events: make([]unix.EpollEvent, bufferSize, bufferSize),
+	}
 
-	e.connections = nil
-	return unix.Close(e.fd)
+	for {
+		select {
+		case <-my.wc.C():
+			return
+		default:
+			my.pollData(args)
+		}
+	}
 }
 
-func (e *Poll) Add(conn net.Conn) error {
+func (my *Poll) Close() error {
+	my.wc.Close(func() {
+		my.connections = loom.Map{}
+		_ = unix.Close(my.fd)
+	})
+
+	return nil
+}
+
+func (my *Poll) add(conn net.Conn) *WSConn {
 	// Extract file descriptor associated with the connection
 	fd := socketFD(conn)
 
-	e.lock.Lock()
-	defer e.lock.Unlock()
-
-	err := unix.EpollCtl(e.fd, syscall.EPOLL_CTL_ADD, fd, &unix.EpollEvent{Events: unix.POLLIN | unix.POLLHUP, Fd: int32(fd)})
+	err := unix.EpollCtl(my.fd, syscall.EPOLL_CTL_ADD, int(fd), &unix.EpollEvent{Events: unix.POLLIN | unix.POLLHUP, Fd: int32(fd)})
 	if err != nil {
-		return err
+		return nil
 	}
-	e.connections[fd] = conn
-	return nil
+
+	var playerConn = &WSConn{
+		fd:           fd,
+		conn:         conn,
+		receivedChan: make(chan Message, my.receivedChanLen),
+	}
+
+	my.connections.Put(fd, playerConn)
+	return playerConn
 }
 
-func (e *Poll) Remove(conn net.Conn) error {
-	fd := socketFD(conn)
-	err := unix.EpollCtl(e.fd, syscall.EPOLL_CTL_DEL, fd, nil)
-	if err != nil {
-		return err
-	}
-	e.lock.Lock()
-	defer e.lock.Unlock()
-	delete(e.connections, fd)
-	return nil
+func (my *Poll) remove(item *WSConn) error {
+	my.connections.Remove(item.fd)
+	_ = item.Close()
+	var err = unix.EpollCtl(my.fd, syscall.EPOLL_CTL_DEL, int(item.fd), nil)
+	return err
 }
 
-func (e *Poll) Wait() ([]net.Conn, error) {
+func (my *Poll) pollData(args *loopArgs) {
 retry:
-	n, err := unix.EpollWait(e.fd, e.events, -1)
+	var events = args.events
+	n, err := unix.EpollWait(my.fd, events, -1)
 	if err != nil {
 		if err == unix.EINTR {
 			goto retry
 		}
-		return nil, err
+		return
 	}
 
-	var connections = e.connbuf[:0]
-	e.lock.RLock()
 	for i := 0; i < n; i++ {
-		conn := e.connections[int(e.events[i].Fd)]
-		if (e.events[i].Events & unix.POLLHUP) == unix.POLLHUP {
-			_ = conn.Close()
+		var fd = int(events[i].Fd)
+		var item = my.connections.Get1(fd).(*WSConn)
+		if (events[i].Events & unix.POLLHUP) == unix.POLLHUP {
+			_ = my.remove(item)
+			continue
 		}
 
-		connections = append(connections, conn)
-	}
-	e.lock.RUnlock()
+		var data, _, err = wsutil.ReadClientData(item.conn)
+		if err != nil {
+			item.receivedChan <- Message{Err: err}
+			_ = my.remove(item)
+			continue
+		}
 
-	return connections, nil
+		if err := checkReceivedMsgBytes(data); err != nil {
+			item.receivedChan <- Message{Err: err}
+			_ = my.remove(item)
+			continue
+		}
+
+		item.receivedChan <- Message{Data: data}
+	}
 }

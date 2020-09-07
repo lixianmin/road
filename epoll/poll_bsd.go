@@ -102,7 +102,7 @@ func (my *Poll) Close() error {
 func (my *Poll) add(conn net.Conn) *WSConn {
 	var fd = socketFD(conn)
 
-	var event = syscall.Kevent_t{Ident: fd, Flags: syscall.EV_ADD | syscall.EV_EOF, Filter: syscall.EVFILT_READ}
+	var event = syscall.Kevent_t{Ident: uint64(fd), Flags: syscall.EV_ADD | syscall.EV_EOF, Filter: syscall.EVFILT_READ}
 	var receivedChan = make(chan Message, my.receivedChanLen)
 	var playerConn *WSConn
 
@@ -121,7 +121,7 @@ func (my *Poll) add(conn net.Conn) *WSConn {
 	return playerConn
 }
 
-func (my *Poll) remove(item *WSConn) {
+func (my *Poll) remove(item *WSConn) error {
 	my.changes.Lock()
 	{
 		// 找到fd出现的位置
@@ -129,7 +129,7 @@ func (my *Poll) remove(item *WSConn) {
 		var count = len(my.changes.d)
 		var idxFind = -1
 		for i := 0; i < count; i++ {
-			if changes[i].Ident == item.fd {
+			if changes[i].Ident == uint64(item.fd) {
 				idxFind = i
 				break
 			}
@@ -146,7 +146,8 @@ func (my *Poll) remove(item *WSConn) {
 	my.changes.Unlock()
 
 	// 关闭链接；关闭chan
-	_ = item.conn.Close()
+	var err = item.Close()
+	return err
 }
 
 func (my *Poll) takeSnapshot(args *loopArgs) {
@@ -179,20 +180,20 @@ retry:
 		// EOF
 		if (args.events[i].Flags & syscall.EV_EOF) == syscall.EV_EOF {
 			item.receivedChan <- Message{Err: io.EOF}
-			my.remove(item)
+			_ = my.remove(item)
 			continue
 		}
 
 		var data, _, err = wsutil.ReadClientData(conn)
 		if err != nil {
 			item.receivedChan <- Message{Err: err}
-			my.remove(item)
+			_ = my.remove(item)
 			continue
 		}
 
 		if err := checkReceivedMsgBytes(data); err != nil {
 			item.receivedChan <- Message{Err: err}
-			my.remove(item)
+			_ = my.remove(item)
 			continue
 		}
 
