@@ -17,10 +17,11 @@ type Acceptor struct {
 	connChan chan PlayerConn
 }
 
-func NewAcceptor(bufferSize int) *Acceptor {
+func NewAcceptor(args AcceptorArgs) *Acceptor {
+	checkAcceptorArgs(&args)
 	var my = &Acceptor{
-		poll:     NewPoll(bufferSize),
-		connChan: make(chan PlayerConn, 8),
+		poll:     newPoll(args.PollBufferSize, args.ReceivedChanLen),
+		connChan: make(chan PlayerConn, args.ConnChanLen),
 	}
 
 	return my

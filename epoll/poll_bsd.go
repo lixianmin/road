@@ -23,9 +23,10 @@ Copyright (C) - All Rights Reserved
 *********************************************************************/
 
 type Poll struct {
-	fd          int
-	connections loom.Map
-	wc          loom.WaitClose
+	receivedChanLen int
+	fd              int
+	connections     loom.Map
+	wc              loom.WaitClose
 
 	changes struct {
 		sync.Mutex // 没有必要使用RWMutex，因为只有一个goLoop()在读
@@ -39,11 +40,7 @@ type loopArgs struct {
 	timeout  syscall.Timespec
 }
 
-func NewPoll(bufferSize int) *Poll {
-	if bufferSize <= 0 {
-		bufferSize = 128
-	}
-
+func newPoll(pollBufferSize int, receivedChanLen int) *Poll {
 	fd, err := syscall.Kqueue()
 	if err != nil {
 		panic(err)
@@ -58,12 +55,13 @@ func NewPoll(bufferSize int) *Poll {
 	}
 
 	var poll = &Poll{
-		fd: fd,
+		receivedChanLen: receivedChanLen,
+		fd:              fd,
 	}
 
-	poll.changes.d = make([]syscall.Kevent_t, 0, bufferSize)
+	poll.changes.d = make([]syscall.Kevent_t, 0, pollBufferSize)
 	loom.Go(func(later *loom.Later) {
-		poll.goLoop(later, bufferSize)
+		poll.goLoop(later, pollBufferSize)
 	})
 
 	return poll
@@ -74,7 +72,7 @@ func (my *Poll) goLoop(later *loom.Later, bufferSize int) {
 	var args = &loopArgs{
 		snapshot: make([]syscall.Kevent_t, bufferSize),
 		events:   make([]syscall.Kevent_t, bufferSize),
-		timeout:  syscall.NsecToTimespec(1e8), // 将超时时间改为100ms，这其实是上一轮没有数据时，下一轮fd们的最长等待时间
+		timeout:  syscall.NsecToTimespec(1e7), // 将超时时间改为10ms，这其实是上一轮没有数据时，下一轮fd们的最长等待时间
 	}
 
 	for {
@@ -105,7 +103,7 @@ func (my *Poll) add(conn net.Conn) *WSConn {
 	var fd = socketFD(conn)
 
 	var event = syscall.Kevent_t{Ident: fd, Flags: syscall.EV_ADD | syscall.EV_EOF, Filter: syscall.EVFILT_READ}
-	var receivedChan = make(chan Message, 8)
+	var receivedChan = make(chan Message, my.receivedChanLen)
 	var playerConn *WSConn
 
 	my.changes.Lock()

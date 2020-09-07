@@ -18,7 +18,7 @@ Copyright (C) - All Rights Reserved
 
 func main() {
 	logo.GetLogger().SetFilterLevel(logo.LevelDebug)
-	var accept = epoll.NewAcceptor(128)
+	var accept = epoll.NewAcceptor(epoll.AcceptorArgs{})
 	var app = road.NewApp(road.AppArgs{
 		Acceptor: accept,
 	})
