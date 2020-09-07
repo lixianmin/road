@@ -22,15 +22,16 @@ package client
 
 import (
 	"bytes"
+	"context"
 	"crypto/tls"
 	"encoding/json"
 	"errors"
 	"fmt"
-	"github.com/gorilla/websocket"
-	"github.com/lixianmin/road/acceptor"
+	"github.com/gobwas/ws"
 	"github.com/lixianmin/road/conn/codec"
 	"github.com/lixianmin/road/conn/message"
 	"github.com/lixianmin/road/conn/packet"
+	"github.com/lixianmin/road/epoll"
 	"github.com/lixianmin/road/logger"
 	"github.com/lixianmin/road/session"
 	"github.com/lixianmin/road/util/compression"
@@ -359,23 +360,19 @@ func (c *Client) ConnectTo(addr string, tlsConfig ...*tls.Config) error {
 // ConnectToWS connects using webshocket protocol
 func (c *Client) ConnectToWS(addr string, path string, tlsConfig ...*tls.Config) error {
 	u := url.URL{Scheme: "ws", Host: addr, Path: path}
-	dialer := websocket.DefaultDialer
+	dialer := ws.DefaultDialer
 
 	if len(tlsConfig) > 0 {
-		dialer.TLSClientConfig = tlsConfig[0]
+		dialer.TLSConfig = tlsConfig[0]
 		u.Scheme = "wss"
 	}
 
-	conn, _, err := dialer.Dial(u.String(), nil)
+	conn, _, _, err := dialer.Dial(context.Background(), u.String())
 	if err != nil {
 		return err
 	}
 
-	c.conn, err = acceptor.NewWSConn(conn)
-	if err != nil {
-		return err
-	}
-
+	c.conn = epoll.NewWSConn(conn, 0, nil)
 	c.IncomingMsgChan = make(chan *message.Message, 10)
 
 	if err = c.handleHandshake(); err != nil {
