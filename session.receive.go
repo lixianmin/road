@@ -15,7 +15,6 @@ import (
 	"github.com/lixianmin/road/service"
 	"github.com/lixianmin/road/util"
 	"reflect"
-	"sync/atomic"
 	"time"
 )
 
@@ -32,13 +31,14 @@ func (my *Session) goLoop(later *loom.Later) {
 	var receivedChan = my.conn.GetReceivedChan()
 	var heartbeatTicker = later.NewTicker(my.heartbeatTimeout)
 	var closeChan = my.wc.C()
+	var lastAt = time.Now().Unix() // last heartbeat unix time stamp
 
 	for {
 		select {
 		case <-heartbeatTicker.C:
 			deadline := time.Now().Add(-2 * my.heartbeatTimeout).Unix()
-			if atomic.LoadInt64(&my.lastAt) < deadline {
-				logger.Info("Session heartbeat timeout, LastTime=%d, Deadline=%d", atomic.LoadInt64(&my.lastAt), deadline)
+			if lastAt < deadline {
+				logger.Info("Session heartbeat timeout, LastTime=%d, Deadline=%d", lastAt, deadline)
 				return
 			}
 
@@ -52,6 +52,7 @@ func (my *Session) goLoop(later *loom.Later) {
 				return
 			}
 		case msg := <-receivedChan:
+			lastAt = time.Now().Unix()
 			if err := my.onReceivedMessage(msg); err != nil {
 				logger.Info(err.Error())
 				return
@@ -90,8 +91,6 @@ func (my *Session) onReceivedMessage(msg epoll.Message) error {
 		case packet.Heartbeat:
 			// expected
 		}
-
-		atomic.StoreInt64(&my.lastAt, time.Now().Unix())
 	}
 
 	return nil

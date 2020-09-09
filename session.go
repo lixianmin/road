@@ -8,7 +8,6 @@ import (
 	"github.com/lixianmin/road/route"
 	"net"
 	"sync/atomic"
-	"time"
 )
 
 /********************************************************************
@@ -33,11 +32,14 @@ type (
 		conn        epoll.PlayerConn
 		attachment  *Attachment
 		sendingChan chan []byte
-		lastAt      int64 // last heartbeat unix time stamp
 		wc          loom.WaitClose
 
 		onHandShaken delegate
 		onClosed     delegate
+	}
+
+	sessionLoopArgs struct {
+
 	}
 
 	receivedItem struct {
@@ -55,7 +57,6 @@ func NewSession(conn epoll.PlayerConn, args commonSessionArgs) *Session {
 		conn:              conn,
 		attachment:        &Attachment{},
 		sendingChan:       make(chan []byte, bufferSize),
-		lastAt:            time.Now().Unix(),
 	}
 
 	loom.Go(agent.goLoop)
@@ -72,6 +73,8 @@ func (my *Session) Close() error {
 	})
 }
 
+// 握手事件：收到握手消息后触发。
+// todo 如果长时间收不到握手消息，应该主动断开链接
 func (my *Session) OnHandShaken(handler func()) {
 	my.onHandShaken.Add(handler)
 }
@@ -81,6 +84,7 @@ func (my *Session) OnClosed(handler func()) {
 	my.onClosed.Add(handler)
 }
 
+// 全局唯一id
 func (my *Session) Id() int64 {
 	return my.id
 }

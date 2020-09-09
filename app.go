@@ -51,7 +51,7 @@ func NewApp(args AppArgs) *App {
 }
 
 func checkAppArgs(args *AppArgs) {
-	if args.HeartbeatTimeout == 0 {
+	if args.HeartbeatTimeout <= 0 {
 		args.HeartbeatTimeout = 10 * time.Second
 	}
 }
@@ -82,7 +82,7 @@ func (my *App) Register(c component.Component, options ...component.Option) {
 	}
 }
 
-func (my *App) onNewSession(fetus *appLoopArgs, conn epoll.PlayerConn) {
+func (my *App) onNewSession(args *appLoopArgs, conn epoll.PlayerConn) {
 	var session = NewSession(conn, my.commonSessionArgs)
 
 	var id = session.Id()
@@ -92,8 +92,8 @@ func (my *App) onNewSession(fetus *appLoopArgs, conn epoll.PlayerConn) {
 		my.sessions.Remove(id)
 	})
 
-	for _, handler := range fetus.onHandShakenHandlers {
-		session.onHandShaken.Add(func() {
+	for _, handler := range args.onHandShakenHandlers {
+		session.OnHandShaken(func() {
 			handler(session)
 		})
 	}
