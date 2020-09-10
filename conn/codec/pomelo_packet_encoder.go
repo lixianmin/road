@@ -33,7 +33,7 @@ func NewPomeloPacketEncoder() *PomeloPacketEncoder {
 	return &PomeloPacketEncoder{}
 }
 
-// Encode create a packet.Packet from  the raw bytes slice and then encode to bugfly bytes slice
+// Encode create a packet.Packet from  the raw bytes slice and then encode to bytes slice
 // Protocol refs: https://github.com/NetEase/pomelo/wiki/Communication-Protocol
 //
 // -<type>-|--------<length>--------|-<data>-

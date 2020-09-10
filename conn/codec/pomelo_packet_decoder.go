@@ -25,10 +25,10 @@ import (
 	"github.com/lixianmin/road/conn/packet"
 )
 
-// PomeloPacketDecoder reads and decodes bugfly data slice following pomelo's protocol
+// PomeloPacketDecoder reads and decodes data slice following pomelo's protocol
 type PomeloPacketDecoder struct{}
 
-// NewPomeloPacketDecoder returns a new decoder that used for decode bugfly bytes slice.
+// NewPomeloPacketDecoder returns a new decoder that used for decode bytes slice.
 func NewPomeloPacketDecoder() *PomeloPacketDecoder {
 	return &PomeloPacketDecoder{}
 }
@@ -38,7 +38,7 @@ func (c *PomeloPacketDecoder) forward(buf *bytes.Buffer) (int, packet.Type, erro
 	return ParseHeader(header)
 }
 
-// Decode decode the bugfly bytes slice to packet.Packet(s)
+// Decode decode the bytes slice to packet.Packet(s)
 func (c *PomeloPacketDecoder) Decode(data []byte) ([]*packet.Packet, error) {
 	buf := bytes.NewBuffer(nil)
 	buf.Write(data)

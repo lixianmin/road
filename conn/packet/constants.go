@@ -22,7 +22,7 @@ package packet
 
 import "errors"
 
-// Type represents the bugfly packet's type such as: handshake and so on.
+// Type represents the packet's type such as: handshake and so on.
 type Type byte
 
 const (

@@ -76,12 +76,12 @@ func (my *clientConn) Close() error {
 	return my.conn.Close()
 }
 
-// LocalAddr returns the local bugfly address.
+// LocalAddr returns the local address.
 func (my *clientConn) LocalAddr() net.Addr {
 	return my.conn.LocalAddr()
 }
 
-// RemoteAddr returns the remote bugfly address.
+// RemoteAddr returns the remote address.
 func (my *clientConn) RemoteAddr() net.Addr {
 	return my.conn.RemoteAddr()
 }
