@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"github.com/lixianmin/got/loom"
+	"github.com/lixianmin/got/timex"
 	"github.com/lixianmin/road/component"
 	"github.com/lixianmin/road/conn/message"
 	"github.com/lixianmin/road/conn/packet"
@@ -31,12 +32,14 @@ func (my *Session) goLoop(later *loom.Later) {
 	var receivedChan = my.conn.GetReceivedChan()
 	var heartbeatTicker = later.NewTicker(my.heartbeatTimeout)
 	var closeChan = my.wc.C()
-	var lastAt = time.Now().Unix() // last heartbeat unix time stamp
+
+	var lastAt = timex.NowUnix() // last heartbeat unix time stamp
+	var deltaDeadline = int64(2 * my.heartbeatTimeout / time.Second)
 
 	for {
 		select {
 		case <-heartbeatTicker.C:
-			deadline := time.Now().Add(-2 * my.heartbeatTimeout).Unix()
+			deadline := timex.NowUnix() - deltaDeadline
 			if lastAt < deadline {
 				logger.Info("Session heartbeat timeout, LastTime=%d, Deadline=%d", lastAt, deadline)
 				return
@@ -52,7 +55,7 @@ func (my *Session) goLoop(later *loom.Later) {
 				return
 			}
 		case msg := <-receivedChan:
-			lastAt = time.Now().Unix()
+			lastAt = timex.NowUnix()
 			if err := my.onReceivedMessage(msg); err != nil {
 				logger.Info(err.Error())
 				return
