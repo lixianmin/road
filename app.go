@@ -52,7 +52,7 @@ func NewApp(args AppArgs) *App {
 
 func checkAppArgs(args *AppArgs) {
 	if args.HeartbeatTimeout <= 0 {
-		args.HeartbeatTimeout = 10 * time.Second
+		args.HeartbeatTimeout = 5 * time.Second
 	}
 }
 

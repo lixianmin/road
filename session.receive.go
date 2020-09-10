@@ -33,8 +33,8 @@ func (my *Session) goLoop(later *loom.Later) {
 	var heartbeatTicker = later.NewTicker(my.heartbeatTimeout)
 	var closeChan = my.wc.C()
 
-	var lastAt = timex.NowUnix() // last heartbeat unix time stamp
-	var deltaDeadline = int64(2 * my.heartbeatTimeout / time.Second)
+	var lastAt = timex.NowUnix() // 最后一次收到数据的时间戳
+	var deltaDeadline = int64(3 * my.heartbeatTimeout / time.Second)
 
 	for {
 		select {
@@ -45,6 +45,7 @@ func (my *Session) goLoop(later *loom.Later) {
 				return
 			}
 
+			// 发送心跳包，如果网络是通的，收到心跳返回时会刷新 lastAt
 			if _, err := my.conn.Write(my.heartbeatPacketData); err != nil {
 				logger.Info("Failed to write in conn: %s", err.Error())
 				return
