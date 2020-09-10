@@ -28,18 +28,15 @@ var (
 type (
 	Session struct {
 		commonSessionArgs
-		id          int64
-		conn        epoll.PlayerConn
-		attachment  *Attachment
-		sendingChan chan []byte
-		wc          loom.WaitClose
+		id                int64
+		conn              epoll.PlayerConn
+		attachment        *Attachment
+		handshakeReceived int32 // 是否接收到handshake消息
+		sendingChan       chan []byte
+		wc                loom.WaitClose
 
 		onHandShaken delegate
 		onClosed     delegate
-	}
-
-	sessionLoopArgs struct {
-
 	}
 
 	receivedItem struct {
@@ -74,7 +71,6 @@ func (my *Session) Close() error {
 }
 
 // 握手事件：收到握手消息后触发。
-// todo 如果长时间收不到握手消息，应该主动断开链接
 func (my *Session) OnHandShaken(handler func()) {
 	my.onHandShaken.Add(handler)
 }

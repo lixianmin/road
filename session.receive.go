@@ -39,9 +39,16 @@ func (my *Session) goLoop(later *loom.Later) {
 	for {
 		select {
 		case <-heartbeatTicker.C:
+			// 如果在一个心跳时间后还没有收到握手消息，就断开链接。
+			// 登录验证之类的事情是在机会在onHandShaken事件中验证的
+			if !loom.LoadBool(&my.handshakeReceived) {
+				logger.Info("Don't received handshake, disconnect")
+				return
+			}
+
 			deadline := timex.NowUnix() - deltaDeadline
 			if lastAt < deadline {
-				logger.Info("Session heartbeat timeout, LastTime=%d, Deadline=%d", lastAt, deadline)
+				logger.Info("Session heartbeat timeout, lastAt=%d, deadline=%d", lastAt, deadline)
 				return
 			}
 
@@ -87,6 +94,7 @@ func (my *Session) onReceivedMessage(msg epoll.Message) error {
 		case packet.Handshake:
 			my.onReceivedHandshake(p)
 		case packet.HandshakeAck:
+			// handshake的流程是 client (request) --> server (response) --> client (ack) --> server (received ack)
 			logger.Debug("Receive handshake ACK")
 		case packet.Data:
 			if err := my.onReceivedData(p); err != nil {
@@ -100,7 +108,9 @@ func (my *Session) onReceivedMessage(msg epoll.Message) error {
 	return nil
 }
 
+// 如果长时间收不到握手消息，服务器会主动断开链接
 func (my *Session) onReceivedHandshake(p *packet.Packet) {
+	loom.StoreBool(&my.handshakeReceived, true)
 	my.sendBytes(my.handshakeResponseData)
 	my.onHandShaken.Invoke()
 }
