@@ -61,14 +61,14 @@ func newPoll(pollBufferSize int, receivedChanLen int) *Poll {
 	}
 
 	poll.changes.d = make([]syscall.Kevent_t, 0, pollBufferSize)
-	loom.Go(func(later *loom.Later) {
+	loom.Go(func(later loom.Later) {
 		poll.goLoop(later, pollBufferSize)
 	})
 
 	return poll
 }
 
-func (my *Poll) goLoop(later *loom.Later, bufferSize int) {
+func (my *Poll) goLoop(later loom.Later, bufferSize int) {
 	defer my.Close()
 	var args = &loopArgsPoll{
 		snapshot: make([]syscall.Kevent_t, bufferSize),

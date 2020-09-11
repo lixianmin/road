@@ -49,7 +49,7 @@ func NewApp(args AppArgs) *App {
 	return app
 }
 
-func (my *App) goLoop(later *loom.Later) {
+func (my *App) goLoop(later loom.Later) {
 	var args = &loopArgsApp{
 	}
 

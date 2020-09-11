@@ -24,7 +24,7 @@ type commonSessionArgs struct {
 	messageEncoder message.Encoder
 	serializer     serialize.Serializer
 
-	wheel                 *loom.TimingWheel
+	wheelSecond           *loom.TimingWheel
 	heartbeatTimeout      time.Duration
 	heartbeatPacketData   []byte
 	handshakeResponseData []byte
@@ -36,7 +36,7 @@ func newCommonSessionArgs(dataCompression bool, heartbeatTimeout time.Duration) 
 		packetEncoder:    codec.NewPomeloPacketEncoder(),
 		messageEncoder:   message.NewMessagesEncoder(dataCompression),
 		serializer:       serialize.NewJsonSerializer(),
-		wheel:            loom.NewTimingWheel(1*time.Second, int(heartbeatTimeout/time.Second)+1),
+		wheelSecond:      loom.NewTimingWheel(time.Second, int(heartbeatTimeout/time.Second)+1),
 		heartbeatTimeout: heartbeatTimeout,
 	}
 

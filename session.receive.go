@@ -27,7 +27,7 @@ author:     lixianmin
 Copyright (C) - All Rights Reserved
 *********************************************************************/
 
-func (my *Session) goLoop(later *loom.Later) {
+func (my *Session) goLoop(later loom.Later) {
 	defer my.Close()
 
 	var receivedChan = my.conn.GetReceivedChan()
@@ -40,7 +40,7 @@ func (my *Session) goLoop(later *loom.Later) {
 
 	for {
 		select {
-		case <-my.wheel.After(my.heartbeatTimeout):
+		case <-my.wheelSecond.After(my.heartbeatTimeout):
 			if err := my.onHeartbeat(args); err != nil {
 				logger.Info(err.Error())
 				return
