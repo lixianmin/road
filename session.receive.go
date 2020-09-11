@@ -2,6 +2,7 @@ package road
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"github.com/lixianmin/got/loom"
 	"github.com/lixianmin/got/timex"
@@ -33,28 +34,16 @@ func (my *Session) goLoop(later *loom.Later) {
 	var heartbeatTicker = later.NewTicker(my.heartbeatTimeout)
 	var closeChan = my.wc.C()
 
-	var lastAt = timex.NowUnix() // 最后一次收到数据的时间戳
-	var deltaDeadline = int64(3 * my.heartbeatTimeout / time.Second)
+	var args = &loopArgsSession{
+		lastAt:        timex.NowUnix(),
+		deltaDeadline: int64(3 * my.heartbeatTimeout / time.Second),
+	}
 
 	for {
 		select {
 		case <-heartbeatTicker.C:
-			// 如果在一个心跳时间后还没有收到握手消息，就断开链接。
-			// 登录验证之类的事情是在机会在onHandShaken事件中验证的
-			if !loom.LoadBool(&my.handshakeReceived) {
-				logger.Info("Don't received handshake, disconnect")
-				return
-			}
-
-			deadline := timex.NowUnix() - deltaDeadline
-			if lastAt < deadline {
-				logger.Info("Session heartbeat timeout, lastAt=%d, deadline=%d", lastAt, deadline)
-				return
-			}
-
-			// 发送心跳包，如果网络是通的，收到心跳返回时会刷新 lastAt
-			if _, err := my.conn.Write(my.heartbeatPacketData); err != nil {
-				logger.Info("Failed to write in conn: %s", err.Error())
+			if err := my.onHeartbeat(args); err != nil {
+				logger.Info(err.Error())
 				return
 			}
 		case data := <-my.sendingChan:
@@ -63,8 +52,8 @@ func (my *Session) goLoop(later *loom.Later) {
 				return
 			}
 		case msg := <-receivedChan:
-			lastAt = timex.NowUnix()
-			if err := my.onReceivedMessage(msg); err != nil {
+			args.lastAt = timex.NowUnix()
+			if err := my.onReceivedMessage(args, msg); err != nil {
 				logger.Info(err.Error())
 				return
 			}
@@ -74,7 +63,27 @@ func (my *Session) goLoop(later *loom.Later) {
 	}
 }
 
-func (my *Session) onReceivedMessage(msg epoll.Message) error {
+func (my *Session) onHeartbeat(args *loopArgsSession) error {
+	// 如果在一个心跳时间后还没有收到握手消息，就断开链接。
+	// 登录验证之类的事情是在机会在onHandShaken事件中验证的
+	if !args.isHandshakeReceived {
+		return errors.New("don't received handshake, disconnect")
+	}
+
+	deadline := timex.NowUnix() - args.deltaDeadline
+	if args.lastAt < deadline {
+		return fmt.Errorf("session heartbeat timeout, lastAt=%d, deadline=%d", args.lastAt, deadline)
+	}
+
+	// 发送心跳包，如果网络是通的，收到心跳返回时会刷新 lastAt
+	if _, err := my.conn.Write(my.heartbeatPacketData); err != nil {
+		return fmt.Errorf("failed to write in conn: %s", err.Error())
+	}
+
+	return nil
+}
+
+func (my *Session) onReceivedMessage(args *loopArgsSession, msg epoll.Message) error {
 	var err = msg.Err
 	if err != nil {
 		var err1 = fmt.Errorf("error reading next available message: %s", err.Error())
@@ -92,7 +101,7 @@ func (my *Session) onReceivedMessage(msg epoll.Message) error {
 		var p = packets[i]
 		switch p.Type {
 		case packet.Handshake:
-			my.onReceivedHandshake(p)
+			my.onReceivedHandshake(args, p)
 		case packet.HandshakeAck:
 			// handshake的流程是 client (request) --> server (response) --> client (ack) --> server (received ack)
 			logger.Debug("Receive handshake ACK")
@@ -109,8 +118,8 @@ func (my *Session) onReceivedMessage(msg epoll.Message) error {
 }
 
 // 如果长时间收不到握手消息，服务器会主动断开链接
-func (my *Session) onReceivedHandshake(p *packet.Packet) {
-	loom.StoreBool(&my.handshakeReceived, true)
+func (my *Session) onReceivedHandshake(args *loopArgsSession, p *packet.Packet) {
+	args.isHandshakeReceived = true
 	my.sendBytes(my.handshakeResponseData)
 	my.onHandShaken.Invoke()
 }

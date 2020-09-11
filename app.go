@@ -27,7 +27,7 @@ type (
 		handlerService *service.HandlerService
 	}
 
-	appLoopArgs struct {
+	loopArgsApp struct {
 		onHandShakenHandlers []func(*Session)
 	}
 )
@@ -57,7 +57,7 @@ func checkAppArgs(args *AppArgs) {
 }
 
 func (my *App) goLoop(later *loom.Later) {
-	var args = &appLoopArgs{
+	var args = &loopArgsApp{
 	}
 
 	for {
@@ -82,7 +82,7 @@ func (my *App) Register(c component.Component, options ...component.Option) {
 	}
 }
 
-func (my *App) onNewSession(args *appLoopArgs, conn epoll.PlayerConn) {
+func (my *App) onNewSession(args *loopArgsApp, conn epoll.PlayerConn) {
 	var session = NewSession(conn, my.commonSessionArgs)
 
 	var id = session.Id()
@@ -106,7 +106,7 @@ func (my *App) OnHandShaken(handler func(*Session)) {
 	}
 
 	my.tasks.SendCallback(func(args interface{}) (result interface{}, err error) {
-		var fetus = args.(*appLoopArgs)
+		var fetus = args.(*loopArgsApp)
 		fetus.onHandShakenHandlers = append(fetus.onHandShakenHandlers, handler)
 		return nil, nil
 	})

@@ -28,15 +28,20 @@ var (
 type (
 	Session struct {
 		commonSessionArgs
-		id                int64
-		conn              epoll.PlayerConn
-		attachment        *Attachment
-		handshakeReceived int32 // 是否接收到handshake消息
-		sendingChan       chan []byte
-		wc                loom.WaitClose
+		id          int64
+		conn        epoll.PlayerConn
+		attachment  *Attachment
+		sendingChan chan []byte
+		wc          loom.WaitClose
 
 		onHandShaken delegate
 		onClosed     delegate
+	}
+
+	loopArgsSession struct {
+		isHandshakeReceived bool  // 是否接收到handshake消息
+		lastAt              int64 // 最后一时收到数据的时间戳
+		deltaDeadline       int64 // 用于判断心跳是不超时
 	}
 
 	receivedItem struct {

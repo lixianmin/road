@@ -35,7 +35,7 @@ type Poll struct {
 	}
 }
 
-type loopArgs struct {
+type loopArgsPoll struct {
 	snapshot []syscall.Kevent_t
 	events   []syscall.Kevent_t
 	timeout  syscall.Timespec
@@ -70,7 +70,7 @@ func newPoll(pollBufferSize int, receivedChanLen int) *Poll {
 
 func (my *Poll) goLoop(later *loom.Later, bufferSize int) {
 	defer my.Close()
-	var args = &loopArgs{
+	var args = &loopArgsPoll{
 		snapshot: make([]syscall.Kevent_t, bufferSize),
 		events:   make([]syscall.Kevent_t, bufferSize),
 		timeout:  syscall.NsecToTimespec(1e7), // 将超时时间改为10ms，这其实是上一轮没有数据时，下一轮fd们的最长等待时间
@@ -150,7 +150,7 @@ func (my *Poll) remove(item *WSConn) error {
 	return err
 }
 
-func (my *Poll) takeSnapshot(args *loopArgs) {
+func (my *Poll) takeSnapshot(args *loopArgsPoll) {
 	my.changes.Lock()
 	var snapCount = len(my.changes.d)
 	args.snapshot = args.snapshot[:snapCount]
@@ -160,7 +160,7 @@ func (my *Poll) takeSnapshot(args *loopArgs) {
 	my.changes.Unlock()
 }
 
-func (my *Poll) pollData(args *loopArgs) {
+func (my *Poll) pollData(args *loopArgsPoll) {
 retry:
 	my.takeSnapshot(args)
 	num, err := syscall.Kevent(my.fd, args.snapshot, args.events, &args.timeout)
