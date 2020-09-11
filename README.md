@@ -2,7 +2,7 @@
 ------
 #### 0x01 road
 
-改编自[pitaya v1.1.1](https://github.com/topfreegames/pitaya)版本的golang游戏库。
+改编自[pitaya v1.1.1](https://github.com/topfreegames/pitaya)版本的golang网络库。
 
 
 
