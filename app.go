@@ -6,7 +6,6 @@ import (
 	"github.com/lixianmin/road/epoll"
 	"github.com/lixianmin/road/logger"
 	"github.com/lixianmin/road/service"
-	"time"
 )
 
 /********************************************************************
@@ -33,7 +32,7 @@ type (
 )
 
 func NewApp(args AppArgs) *App {
-	checkAppArgs(&args)
+	args.checkInit()
 	logger.Init(args.Logger)
 
 	var accept = epoll.NewAcceptor(epoll.AcceptorArgs{})
@@ -48,12 +47,6 @@ func NewApp(args AppArgs) *App {
 	app.tasks = loom.NewTaskChan(app.wc.C())
 	loom.Go(app.goLoop)
 	return app
-}
-
-func checkAppArgs(args *AppArgs) {
-	if args.HeartbeatTimeout <= 0 {
-		args.HeartbeatTimeout = 5 * time.Second
-	}
 }
 
 func (my *App) goLoop(later *loom.Later) {

@@ -2,6 +2,7 @@ package road
 
 import (
 	"encoding/json"
+	"github.com/lixianmin/got/loom"
 	"github.com/lixianmin/road/conn/codec"
 	"github.com/lixianmin/road/conn/message"
 	"github.com/lixianmin/road/conn/packet"
@@ -23,6 +24,7 @@ type commonSessionArgs struct {
 	messageEncoder message.Encoder
 	serializer     serialize.Serializer
 
+	wheel                 *loom.TimingWheel
 	heartbeatTimeout      time.Duration
 	heartbeatPacketData   []byte
 	handshakeResponseData []byte
@@ -34,6 +36,7 @@ func newCommonSessionArgs(dataCompression bool, heartbeatTimeout time.Duration) 
 		packetEncoder:    codec.NewPomeloPacketEncoder(),
 		messageEncoder:   message.NewMessagesEncoder(dataCompression),
 		serializer:       serialize.NewJsonSerializer(),
+		wheel:            loom.NewTimingWheel(1*time.Second, int(heartbeatTimeout/time.Second)+1),
 		heartbeatTimeout: heartbeatTimeout,
 	}
 

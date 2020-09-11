@@ -19,3 +19,10 @@ type AppArgs struct {
 	DataCompression  bool          // 数据是否压缩
 	Logger           logo.ILogger  // 自定义日志对象，默认只输出到控制台
 }
+
+func (args *AppArgs) checkInit() {
+	// 最小也得1s
+	if args.HeartbeatTimeout < time.Second {
+		args.HeartbeatTimeout = 5 * time.Second
+	}
+}
