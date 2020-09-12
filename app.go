@@ -1,12 +1,19 @@
 package road
 
 import (
+	"encoding/json"
 	"fmt"
 	"github.com/lixianmin/got/loom"
 	"github.com/lixianmin/road/component"
+	"github.com/lixianmin/road/conn/codec"
+	"github.com/lixianmin/road/conn/message"
+	"github.com/lixianmin/road/conn/packet"
 	"github.com/lixianmin/road/docgenerator"
 	"github.com/lixianmin/road/epoll"
 	"github.com/lixianmin/road/logger"
+	"github.com/lixianmin/road/serialize"
+	"github.com/lixianmin/road/util/compression"
+	"time"
 )
 
 /********************************************************************
@@ -18,7 +25,16 @@ Copyright (C) - All Rights Reserved
 
 type (
 	App struct {
-		commonSessionArgs
+		// 下面这组参数，有session里都会用到
+		packetEncoder         codec.PacketEncoder
+		packetDecoder         codec.PacketDecoder
+		messageEncoder        message.Encoder
+		serializer            serialize.Serializer
+		wheelSecond           *loom.TimingWheel
+		heartbeatTimeout      time.Duration
+		heartbeatPacketData   []byte
+		handshakeResponseData []byte
+
 		accept   *epoll.Acceptor
 		sessions loom.Map
 		wc       loom.WaitClose
@@ -40,12 +56,21 @@ func NewApp(args AppArgs) *App {
 	args.ServeMux.HandleFunc(args.ServePath, accept.ServeHTTP)
 
 	var app = &App{
-		commonSessionArgs: *newCommonSessionArgs(args.DataCompression, args.HeartbeatTimeout),
-		accept:            accept,
-		services:          make(map[string]*component.Service),
+		packetDecoder:    codec.NewPomeloPacketDecoder(),
+		packetEncoder:    codec.NewPomeloPacketEncoder(),
+		messageEncoder:   message.NewMessagesEncoder(args.DataCompression),
+		serializer:       serialize.NewJsonSerializer(),
+		wheelSecond:      loom.NewTimingWheel(time.Second, int(args.HeartbeatTimeout/time.Second)+1),
+		heartbeatTimeout: args.HeartbeatTimeout,
+
+		accept:   accept,
+		services: make(map[string]*component.Service),
 	}
 
+	app.heartbeatPacketData = app.encodeHeartbeatData()
+	app.handshakeResponseData = app.encodeHandshakeData(args.DataCompression)
 	app.tasks = loom.NewTaskChan(app.wc.C())
+
 	loom.Go(app.goLoop)
 	return app
 }
@@ -70,7 +95,7 @@ func (my *App) goLoop(later loom.Later) {
 }
 
 func (my *App) onNewSession(args *loopArgsApp, conn epoll.PlayerConn) {
-	var session = NewSession(conn, my.commonSessionArgs)
+	var session = NewSession(my, conn)
 
 	var id = session.Id()
 	my.sessions.Put(id, session)
@@ -129,4 +154,47 @@ func (my *App) Documentation(getPtrNames bool) (map[string]interface{}, error) {
 	}
 
 	return map[string]interface{}{"handlers": handlerDocs,}, nil
+}
+
+func (my *App) encodeHeartbeatData() []byte {
+	var bytes, err = my.packetEncoder.Encode(packet.Heartbeat, nil)
+	if err != nil {
+		panic(err)
+	}
+
+	return bytes
+}
+
+func (my *App) encodeHandshakeData(dataCompression bool) []byte {
+	hData := map[string]interface{}{
+		"code": 200,
+		"sys": map[string]interface{}{
+			"heartbeat":  my.heartbeatTimeout.Seconds(),
+			"dict":       message.GetDictionary(),
+			"serializer": my.serializer.GetName(),
+		},
+	}
+
+	data, err := json.Marshal(hData)
+	if err != nil {
+		panic(err)
+	}
+
+	if dataCompression {
+		compressedData, err := compression.DeflateData(data)
+		if err != nil {
+			panic(err)
+		}
+
+		if len(compressedData) < len(data) {
+			data = compressedData
+		}
+	}
+
+	bytes, err := my.packetEncoder.Encode(packet.Handshake, data)
+	if err != nil {
+		panic(err)
+	}
+
+	return bytes
 }

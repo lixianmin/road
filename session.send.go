@@ -19,7 +19,7 @@ func (my *Session) Push(route string, v interface{}) error {
 		return nil
 	}
 
-	var payload, err = util.SerializeOrRaw(my.serializer, v)
+	var payload, err = util.SerializeOrRaw(my.app.serializer, v)
 	var msg = message.Message{Type: message.Push, Route: route, Data: payload}
 	return my.sendMessageMayError(msg, err)
 }
@@ -30,7 +30,7 @@ func (my *Session) Kick() error {
 		return nil
 	}
 
-	p, err := my.packetEncoder.Encode(packet.Kick, nil)
+	p, err := my.app.packetEncoder.Encode(packet.Kick, nil)
 	if err != nil {
 		return err
 	}
@@ -48,7 +48,7 @@ func (my *Session) sendMessageMayError(msg message.Message, err error) error {
 		var errWrap = checkCreateError(err)
 
 		var err1 error
-		msg.Data, err1 = util.SerializeOrRaw(my.serializer, errWrap)
+		msg.Data, err1 = util.SerializeOrRaw(my.app.serializer, errWrap)
 		if err1 != nil {
 			logger.Info("serialize failed, route=%s, err1=%q", msg.Route, err1.Error())
 			return err1
@@ -77,13 +77,13 @@ func (my *Session) sendBytes(data []byte) {
 }
 
 func (my *Session) packetEncodeMessage(msg *message.Message) ([]byte, error) {
-	data, err := my.messageEncoder.Encode(msg)
+	data, err := my.app.messageEncoder.Encode(msg)
 	if err != nil {
 		return nil, err
 	}
 
 	// packet encode
-	p, err := my.packetEncoder.Encode(packet.Data, data)
+	p, err := my.app.packetEncoder.Encode(packet.Data, data)
 	if err != nil {
 		return nil, err
 	}

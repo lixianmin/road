@@ -27,7 +27,7 @@ var (
 
 type (
 	Session struct {
-		commonSessionArgs
+		app         *App
 		id          int64
 		conn        epoll.PlayerConn
 		attachment  *Attachment
@@ -51,14 +51,14 @@ type (
 	}
 )
 
-func NewSession(conn epoll.PlayerConn, args commonSessionArgs) *Session {
+func NewSession(app *App, conn epoll.PlayerConn) *Session {
 	const bufferSize = 16
 	var agent = &Session{
-		commonSessionArgs: args,
-		id:                atomic.AddInt64(&idGenerator, 1),
-		conn:              conn,
-		attachment:        &Attachment{},
-		sendingChan:       make(chan []byte, bufferSize),
+		app:         app,
+		id:          atomic.AddInt64(&idGenerator, 1),
+		conn:        conn,
+		attachment:  &Attachment{},
+		sendingChan: make(chan []byte, bufferSize),
 	}
 
 	loom.Go(agent.goLoop)

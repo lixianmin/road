@@ -31,15 +31,16 @@ func (my *Session) goLoop(later loom.Later) {
 
 	var receivedChan = my.conn.GetReceivedChan()
 	var closeChan = my.wc.C()
+	var app = my.app
 
 	var args = &loopArgsSession{
 		lastAt:        timex.NowUnix(),
-		deltaDeadline: int64(3 * my.heartbeatTimeout / time.Second),
+		deltaDeadline: int64(3 * app.heartbeatTimeout / time.Second),
 	}
 
 	for {
 		select {
-		case <-my.wheelSecond.After(my.heartbeatTimeout):
+		case <-app.wheelSecond.After(app.heartbeatTimeout):
 			if err := my.onHeartbeat(args); err != nil {
 				logger.Info(err.Error())
 				return
@@ -74,7 +75,7 @@ func (my *Session) onHeartbeat(args *loopArgsSession) error {
 	}
 
 	// 发送心跳包，如果网络是通的，收到心跳返回时会刷新 lastAt
-	if _, err := my.conn.Write(my.heartbeatPacketData); err != nil {
+	if _, err := my.conn.Write(my.app.heartbeatPacketData); err != nil {
 		return fmt.Errorf("failed to write in conn: %s", err.Error())
 	}
 
@@ -88,7 +89,7 @@ func (my *Session) onReceivedMessage(args *loopArgsSession, msg epoll.Message) e
 		return err1
 	}
 
-	packets, err := my.packetDecoder.Decode(msg.Data)
+	packets, err := my.app.packetDecoder.Decode(msg.Data)
 	if err != nil {
 		var err1 = fmt.Errorf("failed to decode message: %s", err.Error())
 		return err1
@@ -118,7 +119,7 @@ func (my *Session) onReceivedMessage(args *loopArgsSession, msg epoll.Message) e
 // 如果长时间收不到握手消息，服务器会主动断开链接
 func (my *Session) onReceivedHandshake(args *loopArgsSession, p *packet.Packet) {
 	args.isHandshakeReceived = true
-	my.sendBytes(my.handshakeResponseData)
+	my.sendBytes(my.app.handshakeResponseData)
 	my.onHandShaken.Invoke()
 }
 
@@ -129,7 +130,7 @@ func (my *Session) onReceivedData(p *packet.Packet) error {
 		return err1
 	}
 
-	payload, err := processReceivedData(item, my.serializer)
+	payload, err := processReceivedData(item, my.app.serializer)
 	if item.msg.Type != message.Notify {
 		var msg = message.Message{Type: message.Response, ID: item.msg.ID, Data: payload}
 		_ = my.sendMessageMayError(msg, err)
