@@ -24,7 +24,8 @@ func main() {
 	})
 
 	var room = &Room{}
-	app.Register(room, component.WithName("room"), component.WithNameFunc(strings.ToLower))
+	_ = app.Register(room, component.WithName("room"), component.WithNameFunc(strings.ToLower))
 
-	_ = http.ListenAndServe(":8888", nil)
+	var err = http.ListenAndServe(":8888", nil)
+	println(err)
 }

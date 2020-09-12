@@ -1,11 +1,12 @@
 package road
 
 import (
+	"fmt"
 	"github.com/lixianmin/got/loom"
 	"github.com/lixianmin/road/component"
+	"github.com/lixianmin/road/docgenerator"
 	"github.com/lixianmin/road/epoll"
 	"github.com/lixianmin/road/logger"
-	"github.com/lixianmin/road/service"
 )
 
 /********************************************************************
@@ -23,7 +24,7 @@ type (
 		wc       loom.WaitClose
 		tasks    *loom.TaskChan
 
-		handlerService *service.HandlerService
+		services map[string]*component.Service // all registered service
 	}
 
 	loopArgsApp struct {
@@ -41,7 +42,7 @@ func NewApp(args AppArgs) *App {
 	var app = &App{
 		commonSessionArgs: *newCommonSessionArgs(args.DataCompression, args.HeartbeatTimeout),
 		accept:            accept,
-		handlerService:    service.NewHandlerService(),
+		services:          make(map[string]*component.Service),
 	}
 
 	app.tasks = loom.NewTaskChan(app.wc.C())
@@ -65,13 +66,6 @@ func (my *App) goLoop(later loom.Later) {
 		case <-my.wc.C():
 			return
 		}
-	}
-}
-
-func (my *App) Register(c component.Component, options ...component.Option) {
-	var err = my.handlerService.Register(c, options)
-	if err != nil {
-		logger.Warn("Failed to register handler: %s", err.Error())
 	}
 }
 
@@ -105,14 +99,34 @@ func (my *App) OnHandShaken(handler func(*Session)) {
 	})
 }
 
+func (my *App) Register(comp component.Component, opts ...component.Option) error {
+	s := component.NewService(comp, opts)
+
+	if _, ok := my.services[s.Name]; ok {
+		return fmt.Errorf("handler: service already defined: %s", s.Name)
+	}
+
+	if err := s.ExtractHandler(); err != nil {
+		return err
+	}
+
+	// register all handlers
+	my.services[s.Name] = s
+	for name, handler := range s.Handlers {
+		var route = fmt.Sprintf("%s.%s", s.Name, name)
+		handlers[route] = handler
+		logger.Debug("route=%s", route)
+	}
+
+	return nil
+}
+
 // Documentation returns handler and remotes documentacion
 func (my *App) Documentation(getPtrNames bool) (map[string]interface{}, error) {
-	handlerDocs, err := my.handlerService.Docs(getPtrNames)
+	handlerDocs, err := docgenerator.HandlersDocs("game", my.services, getPtrNames)
 	if err != nil {
 		return nil, err
 	}
 
-	return map[string]interface{}{
-		"handlers": handlerDocs,
-	}, nil
+	return map[string]interface{}{"handlers": handlerDocs,}, nil
 }

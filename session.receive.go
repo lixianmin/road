@@ -14,7 +14,6 @@ import (
 	"github.com/lixianmin/road/logger"
 	"github.com/lixianmin/road/route"
 	"github.com/lixianmin/road/serialize"
-	"github.com/lixianmin/road/service"
 	"github.com/lixianmin/road/util"
 	"reflect"
 	"time"
@@ -162,7 +161,7 @@ func (my *Session) decodeReceivedData(p *packet.Packet) (receivedItem, error) {
 }
 
 func processReceivedData(data receivedItem, serializer serialize.Serializer) ([]byte, error) {
-	handler, err := service.GetHandler(data.route)
+	handler, err := GetHandler(data.route)
 	if err != nil {
 		return nil, err
 	}
