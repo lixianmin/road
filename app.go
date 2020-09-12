@@ -11,6 +11,7 @@ import (
 	"github.com/lixianmin/road/docgenerator"
 	"github.com/lixianmin/road/epoll"
 	"github.com/lixianmin/road/logger"
+	"github.com/lixianmin/road/route"
 	"github.com/lixianmin/road/serialize"
 	"github.com/lixianmin/road/util/compression"
 	"time"
@@ -26,6 +27,7 @@ Copyright (C) - All Rights Reserved
 type (
 	App struct {
 		// 下面这组参数，有session里都会用到
+		handlers              map[string]*component.Handler // all handler method
 		packetEncoder         codec.PacketEncoder
 		packetDecoder         codec.PacketDecoder
 		messageEncoder        message.Encoder
@@ -56,6 +58,7 @@ func NewApp(args AppArgs) *App {
 	args.ServeMux.HandleFunc(args.ServePath, accept.ServeHTTP)
 
 	var app = &App{
+		handlers:         make(map[string]*component.Handler, 8),
 		packetDecoder:    codec.NewPomeloPacketDecoder(),
 		packetEncoder:    codec.NewPomeloPacketEncoder(),
 		messageEncoder:   message.NewMessagesEncoder(args.DataCompression),
@@ -138,12 +141,22 @@ func (my *App) Register(comp component.Component, opts ...component.Option) erro
 	// register all handlers
 	my.services[s.Name] = s
 	for name, handler := range s.Handlers {
-		var route = fmt.Sprintf("%s.%s", s.Name, name)
-		handlers[route] = handler
-		logger.Debug("route=%s", route)
+		var route1 = fmt.Sprintf("%s.%s", s.Name, name)
+		my.handlers[route1] = handler
+		logger.Debug("route=%s", route1)
 	}
 
 	return nil
+}
+
+func (my *App) getHandler(rt *route.Route) (*component.Handler, error) {
+	handler, ok := my.handlers[rt.Short()]
+	if !ok {
+		e := fmt.Errorf("handler: %s not found", rt.String())
+		return nil, e
+	}
+
+	return handler, nil
 }
 
 // Documentation returns handler and remotes documentacion
