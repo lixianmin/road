@@ -18,11 +18,16 @@ type AppArgs struct {
 	HeartbeatTimeout time.Duration // 心跳超时时间
 	DataCompression  bool          // 数据是否压缩
 	Logger           logo.ILogger  // 自定义日志对象，默认只输出到控制台
+	TaskChanSize     int           // 任务队列长度
 }
 
 func (args *AppArgs) checkInit() {
 	// 最小也得1s
 	if args.HeartbeatTimeout < time.Second {
 		args.HeartbeatTimeout = 5 * time.Second
+	}
+
+	if args.TaskChanSize <= 0 {
+		args.TaskChanSize = 128
 	}
 }

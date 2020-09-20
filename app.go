@@ -72,7 +72,7 @@ func NewApp(args AppArgs) *App {
 
 	app.heartbeatPacketData = app.encodeHeartbeatData()
 	app.handshakeResponseData = app.encodeHandshakeData(args.DataCompression)
-	app.tasks = loom.NewTaskChan(app.wc.C())
+	app.tasks = loom.NewTaskChan(args.TaskChanSize, app.wc.C())
 
 	loom.Go(app.goLoop)
 	return app
