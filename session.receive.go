@@ -181,10 +181,7 @@ func processReceivedData(data receivedItem, handler *component.Handler, serializ
 		args = []reflect.Value{handler.Receiver, reflect.ValueOf(data.ctx)}
 	}
 
-	resp, err := hookCallback(func() (i interface{}, e error) {
-		return util.Pcall(handler.Method, args)
-	})
-
+	resp, err := hookCallback(util.Pcall, handler.Method, args)
 	if err != nil {
 		return nil, err
 	}

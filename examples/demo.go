@@ -6,6 +6,7 @@ import (
 	"github.com/lixianmin/road/component"
 	"github.com/lixianmin/road/logger"
 	"net/http"
+	"reflect"
 	"strings"
 	"time"
 )
@@ -34,18 +35,18 @@ func main() {
 }
 
 func testHook(app *road.App) {
-	app.AddHook(func(rawMethod func() (interface{}, error)) (i interface{}, e error) {
+	app.AddHook(func(rawMethod road.RawMethod, method reflect.Method, args []reflect.Value) (i interface{}, e error) {
 		var startTime = time.Now()
-		var ret, err = rawMethod()
+		var ret, err = rawMethod(method, args)
 		var delta = time.Since(startTime)
 		logger.Info(delta)
 
 		return ret, err
 	})
 
-	app.AddHook(func(rawMethod func() (interface{}, error)) (i interface{}, e error) {
+	app.AddHook(func(rawMethod road.RawMethod, method reflect.Method, args []reflect.Value) (i interface{}, e error) {
 		logger.Info("hello")
-		var ret, err = rawMethod()
+		var ret, err = rawMethod(method, args)
 		logger.Info("world")
 		return ret, err
 	})
