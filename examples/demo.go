@@ -4,8 +4,10 @@ import (
 	"github.com/lixianmin/logo"
 	"github.com/lixianmin/road"
 	"github.com/lixianmin/road/component"
+	"github.com/lixianmin/road/logger"
 	"net/http"
 	"strings"
+	"time"
 )
 
 /********************************************************************
@@ -25,7 +27,26 @@ func main() {
 
 	var room = &Room{}
 	_ = app.Register(room, component.WithName("room"), component.WithNameFunc(strings.ToLower))
+	testHook(app)
 
 	var err = http.ListenAndServe(":8888", nil)
 	println(err)
+}
+
+func testHook(app *road.App) {
+	app.AddHook(func(rawMethod func() (interface{}, error)) (i interface{}, e error) {
+		var startTime = time.Now()
+		var ret, err = rawMethod()
+		var delta = time.Since(startTime)
+		logger.Info(delta)
+
+		return ret, err
+	})
+
+	app.AddHook(func(rawMethod func() (interface{}, error)) (i interface{}, e error) {
+		logger.Info("hello")
+		var ret, err = rawMethod()
+		logger.Info("world")
+		return ret, err
+	})
 }

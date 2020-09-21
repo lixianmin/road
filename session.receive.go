@@ -135,7 +135,7 @@ func (my *Session) onReceivedData(p *packet.Packet) error {
 		return err
 	}
 
-	payload, err := processReceivedData(item, handler, my.app.serializer)
+	payload, err := processReceivedData(item, handler, my.app.serializer, my.app.hookCallback)
 	if item.msg.Type != message.Notify {
 		var msg = message.Message{Type: message.Response, ID: item.msg.ID, Data: payload}
 		_ = my.sendMessageMayError(msg, err)
@@ -166,7 +166,7 @@ func (my *Session) decodeReceivedData(p *packet.Packet) (receivedItem, error) {
 	return item, nil
 }
 
-func processReceivedData(data receivedItem, handler *component.Handler, serializer serialize.Serializer) ([]byte, error) {
+func processReceivedData(data receivedItem, handler *component.Handler, serializer serialize.Serializer, hookCallback HookFunc) ([]byte, error) {
 	// First unmarshal the handler arg that will be passed to
 	// both handler and pipeline functions
 	arg, err := unmarshalHandlerArg(handler, serializer, data.msg.Data)
@@ -181,7 +181,10 @@ func processReceivedData(data receivedItem, handler *component.Handler, serializ
 		args = []reflect.Value{handler.Receiver, reflect.ValueOf(data.ctx)}
 	}
 
-	resp, err := util.Pcall(handler.Method, args)
+	resp, err := hookCallback(func() (i interface{}, e error) {
+		return util.Pcall(handler.Method, args)
+	})
+
 	if err != nil {
 		return nil, err
 	}
