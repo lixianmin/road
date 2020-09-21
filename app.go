@@ -14,7 +14,6 @@ import (
 	"github.com/lixianmin/road/route"
 	"github.com/lixianmin/road/serialize"
 	"github.com/lixianmin/road/util/compression"
-	"reflect"
 	"time"
 )
 
@@ -26,10 +25,8 @@ Copyright (C) - All Rights Reserved
 *********************************************************************/
 
 type (
-	RawMethod func(method reflect.Method, args []reflect.Value) (interface{}, error)
-	HookFunc  func(rawMethod RawMethod, method reflect.Method, args []reflect.Value) (interface{}, error)
-
-	App struct {
+	HookFunc func(rawMethod func() (interface{}, error)) (interface{}, error)
+	App      struct {
 		// 下面这组参数，有session里都会用到
 		handlers              map[string]*component.Handler // all handler method
 		packetEncoder         codec.PacketEncoder
@@ -73,8 +70,8 @@ func NewApp(args AppArgs) *App {
 
 		accept:   accept,
 		services: make(map[string]*component.Service),
-		hookCallback: func(rawMethod RawMethod, method reflect.Method, args []reflect.Value) (i interface{}, e error) {
-			return rawMethod(method, args)
+		hookCallback: func(rawMethod func() (interface{}, error)) (i interface{}, e error) {
+			return rawMethod()
 		},
 	}
 
@@ -159,8 +156,10 @@ func (my *App) Register(comp component.Component, opts ...component.Option) erro
 
 func (my *App) AddHook(callback HookFunc) {
 	var last = my.hookCallback
-	my.hookCallback = func(rawMethod RawMethod, method reflect.Method, args []reflect.Value) (i interface{}, e error) {
-		return last(rawMethod, method, args)
+	my.hookCallback = func(rawMethod func() (interface{}, error)) (i interface{}, e error) {
+		return callback(func() (i interface{}, e error) {
+			return last(rawMethod)
+		})
 	}
 }
 
