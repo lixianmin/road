@@ -43,13 +43,13 @@ func newPoll(pollBufferSize int, receivedChanLen int) *Poll {
 		fd:              fd,
 	}
 
-	loom.Go(func(later *loom.Later) {
+	loom.Go(func(later loom.Later) {
 		poll.goLoop(later, pollBufferSize)
 	})
 	return poll
 }
 
-func (my *Poll) goLoop(later *loom.Later, bufferSize int) {
+func (my *Poll) goLoop(later loom.Later, bufferSize int) {
 	defer my.Close()
 	var args = &loopArgsPoll{
 		events: make([]unix.EpollEvent, bufferSize, bufferSize),
