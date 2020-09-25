@@ -33,7 +33,7 @@ type (
 		packetDecoder         codec.PacketDecoder
 		messageEncoder        message.Encoder
 		serializer            serialize.Serializer
-		wheelSecond           *loom.TimingWheel
+		wheelSecond           *loom.Wheel
 		heartbeatTimeout      time.Duration
 		heartbeatPacketData   []byte
 		handshakeResponseData []byte
@@ -65,7 +65,7 @@ func NewApp(args AppArgs) *App {
 		packetEncoder:    codec.NewPomeloPacketEncoder(),
 		messageEncoder:   message.NewMessagesEncoder(args.DataCompression),
 		serializer:       serialize.NewJsonSerializer(),
-		wheelSecond:      loom.NewTimingWheel(time.Second, int(args.HeartbeatTimeout/time.Second)+1),
+		wheelSecond:      loom.NewWheel(time.Second, int(args.HeartbeatTimeout/time.Second)+1),
 		heartbeatTimeout: args.HeartbeatTimeout,
 
 		accept:   accept,

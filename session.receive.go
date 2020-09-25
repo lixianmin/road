@@ -32,6 +32,7 @@ func (my *Session) goLoop(later loom.Later) {
 	var receivedChan = my.conn.GetReceivedChan()
 	var closeChan = my.wc.C()
 	var app = my.app
+	var heartbeatTimer = app.wheelSecond.NewTimer(app.heartbeatTimeout)
 
 	var args = &loopArgsSession{
 		lastAt:        timex.NowUnix(),
@@ -40,7 +41,9 @@ func (my *Session) goLoop(later loom.Later) {
 
 	for {
 		select {
-		case <-app.wheelSecond.After(app.heartbeatTimeout):
+		case <-heartbeatTimer.C:
+			heartbeatTimer.Reset()
+
 			if err := my.onHeartbeat(args); err != nil {
 				logger.Info(err.Error())
 				return
