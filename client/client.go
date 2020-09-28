@@ -232,7 +232,7 @@ func (c *Client) handlePackets() {
 			switch p.Type {
 			case packet.Data:
 				//handle data
-				logger.Debug("got data: %s", string(p.Data))
+				//logger.Debug("got data: %s", string(p.Data))
 				m, err := message.Decode(p.Data)
 				if err != nil {
 					logger.Info("error decoding msg from sv: %s", string(m.Data))
