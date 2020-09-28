@@ -41,7 +41,7 @@ type (
 		accept   *epoll.Acceptor
 		sessions loom.Map
 		wc       loom.WaitClose
-		tasks    *loom.TaskChan
+		tasks    *loom.TaskQueue
 
 		services     map[string]*component.Service // all registered service
 		hookCallback HookFunc
@@ -77,7 +77,10 @@ func NewApp(args AppArgs) *App {
 
 	app.heartbeatPacketData = app.encodeHeartbeatData()
 	app.handshakeResponseData = app.encodeHandshakeData(args.DataCompression)
-	app.tasks = loom.NewTaskChan(args.TaskChanSize, app.wc.C())
+	app.tasks = loom.NewTaskQueue(loom.TaskQueueArgs{
+		Size:      args.TaskChanSize,
+		CloseChan: app.wc.C(),
+	})
 
 	loom.Go(app.goLoop)
 	return app
