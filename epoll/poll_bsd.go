@@ -76,9 +76,10 @@ func (my *Poll) goLoop(later loom.Later, bufferSize int) {
 		timeout:  syscall.NsecToTimespec(1e7), // 将超时时间改为10ms，这其实是上一轮没有数据时，下一轮fd们的最长等待时间
 	}
 
+	var closeChan = my.wc.C()
 	for {
 		select {
-		case <-my.wc.C():
+		case <-closeChan:
 			return
 		default:
 			my.pollData(args)

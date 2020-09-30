@@ -55,9 +55,10 @@ func (my *Poll) goLoop(later loom.Later, bufferSize int) {
 		events: make([]unix.EpollEvent, bufferSize, bufferSize),
 	}
 
+	var closeChan = my.wc.C()
 	for {
 		select {
-		case <-my.wc.C():
+		case <-closeChan:
 			return
 		default:
 			my.pollData(args)

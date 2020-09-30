@@ -103,6 +103,7 @@ func (my *App) goLoop(later loom.Later) {
 	var args = &loopArgsApp{
 	}
 
+	var closeChan = my.wc.C()
 	for {
 		select {
 		case conn := <-my.accept.GetConnChan():
@@ -112,7 +113,7 @@ func (my *App) goLoop(later loom.Later) {
 			if err != nil {
 				logger.Info("err=%q", err)
 			}
-		case <-my.wc.C():
+		case <-closeChan:
 			return
 		}
 	}
