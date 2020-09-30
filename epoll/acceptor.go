@@ -17,11 +17,20 @@ type Acceptor struct {
 	connChan chan PlayerConn
 }
 
-func NewAcceptor(args AcceptorArgs) *Acceptor {
-	checkAcceptorArgs(&args)
+func NewAcceptor(opts ...AcceptorOption) *Acceptor {
+	var options = acceptorOptions{
+		ConnChanSize:     16,
+		ReceivedChanSize: 16,
+		PollBufferSize:   1024,
+	}
+
+	for _, opt := range opts {
+		opt(&options)
+	}
+
 	var my = &Acceptor{
-		poll:     newPoll(args.PollBufferSize, args.ReceivedChanLen),
-		connChan: make(chan PlayerConn, args.ConnChanLen),
+		poll:     newPoll(options.PollBufferSize, options.ReceivedChanSize),
+		connChan: make(chan PlayerConn, options.ConnChanSize),
 	}
 
 	return my

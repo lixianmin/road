@@ -59,7 +59,7 @@ func NewSession(app *App, conn epoll.PlayerConn) *Session {
 		id:          atomic.AddInt64(&globalIdGenerator, 1),
 		conn:        conn,
 		attachment:  &Attachment{},
-		sendingChan: make(chan []byte, app.sendBufferSize),
+		sendingChan: make(chan []byte, app.sendingChanSize),
 	}
 
 	session.tasks = loom.NewTaskQueue(loom.TaskQueueArgs{

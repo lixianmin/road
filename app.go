@@ -37,7 +37,7 @@ type (
 		heartbeatTimeout      time.Duration
 		heartbeatPacketData   []byte
 		handshakeResponseData []byte
-		sendBufferSize        int
+		sendingChanSize       int
 		taskQueueSize         int
 
 		accept   *epoll.Acceptor
@@ -57,12 +57,15 @@ type (
 func NewApp(serveMux IServeMux, opts ...AppOption) *App {
 	// 默认值
 	var options = appOptions{
-		ServePath:        "/",
-		HeartbeatTimeout: 5 * time.Second,
-		DataCompression:  false,
-		Logger:           nil,
-		SendBufferSize:   16,
-		TaskQueueSize:    64,
+		ServePath:                "/",
+		HeartbeatTimeout:         5 * time.Second,
+		DataCompression:          false,
+		Logger:                   nil,
+		AcceptorConnChanSize:     16,
+		AcceptorPollBufferSize:   16,
+		AcceptorReceivedChanSize: 1024,
+		SessionSendingChanSize:   16,
+		SessionTaskQueueSize:     64,
 	}
 
 	// 初始化
@@ -72,7 +75,10 @@ func NewApp(serveMux IServeMux, opts ...AppOption) *App {
 
 	logger.Init(options.Logger)
 
-	var accept = epoll.NewAcceptor(epoll.AcceptorArgs{})
+	var accept = epoll.NewAcceptor(epoll.WithConnChanSize(options.AcceptorConnChanSize),
+		epoll.WithPollBufferSize(options.AcceptorPollBufferSize),
+		epoll.WithReceivedChanSize(options.AcceptorReceivedChanSize),
+	)
 	serveMux.HandleFunc(options.ServePath, accept.ServeHTTP)
 
 	var app = &App{
@@ -83,8 +89,8 @@ func NewApp(serveMux IServeMux, opts ...AppOption) *App {
 		serializer:       serialize.NewJsonSerializer(),
 		wheelSecond:      loom.NewWheel(time.Second, int(options.HeartbeatTimeout/time.Second)+1),
 		heartbeatTimeout: options.HeartbeatTimeout,
-		sendBufferSize:   options.SendBufferSize,
-		taskQueueSize:    options.TaskQueueSize,
+		sendingChanSize:  options.SessionSendingChanSize,
+		taskQueueSize:    options.SessionTaskQueueSize,
 
 		accept:   accept,
 		services: make(map[string]*component.Service),
@@ -96,7 +102,7 @@ func NewApp(serveMux IServeMux, opts ...AppOption) *App {
 	app.heartbeatPacketData = app.encodeHeartbeatData()
 	app.handshakeResponseData = app.encodeHandshakeData(options.DataCompression)
 	app.tasks = loom.NewTaskQueue(loom.TaskQueueArgs{
-		Size:      options.TaskQueueSize,
+		Size:      options.SessionTaskQueueSize,
 		CloseChan: app.wc.C(),
 	})
 
