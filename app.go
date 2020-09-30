@@ -37,6 +37,8 @@ type (
 		heartbeatTimeout      time.Duration
 		heartbeatPacketData   []byte
 		handshakeResponseData []byte
+		sendBufferSize        int
+		taskQueueSize         int
 
 		accept   *epoll.Acceptor
 		sessions loom.Map
@@ -47,7 +49,7 @@ type (
 		hookCallback HookFunc
 	}
 
-	loopArgsApp struct {
+	appFetus struct {
 		onHandShakenHandlers []func(*Session)
 	}
 )
@@ -59,7 +61,8 @@ func NewApp(serveMux IServeMux, opts ...AppOption) *App {
 		HeartbeatTimeout: 5 * time.Second,
 		DataCompression:  false,
 		Logger:           nil,
-		TaskChanSize:     128,
+		SendBufferSize:   16,
+		TaskQueueSize:    64,
 	}
 
 	// 初始化
@@ -80,6 +83,8 @@ func NewApp(serveMux IServeMux, opts ...AppOption) *App {
 		serializer:       serialize.NewJsonSerializer(),
 		wheelSecond:      loom.NewWheel(time.Second, int(options.HeartbeatTimeout/time.Second)+1),
 		heartbeatTimeout: options.HeartbeatTimeout,
+		sendBufferSize:   options.SendBufferSize,
+		taskQueueSize:    options.TaskQueueSize,
 
 		accept:   accept,
 		services: make(map[string]*component.Service),
@@ -91,7 +96,7 @@ func NewApp(serveMux IServeMux, opts ...AppOption) *App {
 	app.heartbeatPacketData = app.encodeHeartbeatData()
 	app.handshakeResponseData = app.encodeHandshakeData(options.DataCompression)
 	app.tasks = loom.NewTaskQueue(loom.TaskQueueArgs{
-		Size:      options.TaskChanSize,
+		Size:      options.TaskQueueSize,
 		CloseChan: app.wc.C(),
 	})
 
@@ -100,16 +105,16 @@ func NewApp(serveMux IServeMux, opts ...AppOption) *App {
 }
 
 func (my *App) goLoop(later loom.Later) {
-	var args = &loopArgsApp{
+	var fetus = &appFetus{
 	}
 
 	var closeChan = my.wc.C()
 	for {
 		select {
 		case conn := <-my.accept.GetConnChan():
-			my.onNewSession(args, conn)
+			my.onNewSession(fetus, conn)
 		case task := <-my.tasks.C:
-			var err = task.Do(args)
+			var err = task.Do(fetus)
 			if err != nil {
 				logger.Info("err=%q", err)
 			}
@@ -119,7 +124,7 @@ func (my *App) goLoop(later loom.Later) {
 	}
 }
 
-func (my *App) onNewSession(args *loopArgsApp, conn epoll.PlayerConn) {
+func (my *App) onNewSession(fetus *appFetus, conn epoll.PlayerConn) {
 	var session = NewSession(my, conn)
 
 	var id = session.Id()
@@ -129,7 +134,7 @@ func (my *App) onNewSession(args *loopArgsApp, conn epoll.PlayerConn) {
 		my.sessions.Remove(id)
 	})
 
-	for _, handler := range args.onHandShakenHandlers {
+	for _, handler := range fetus.onHandShakenHandlers {
 		session.OnHandShaken(func() {
 			handler(session)
 		})
@@ -143,7 +148,7 @@ func (my *App) OnHandShaken(handler func(*Session)) {
 	}
 
 	my.tasks.SendCallback(func(args interface{}) (result interface{}, err error) {
-		var fetus = args.(*loopArgsApp)
+		var fetus = args.(*appFetus)
 		fetus.onHandShakenHandlers = append(fetus.onHandShakenHandlers, handler)
 		return nil, nil
 	})

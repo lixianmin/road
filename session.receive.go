@@ -59,6 +59,8 @@ func (my *Session) goLoop(later loom.Later) {
 				logger.Info(err.Error())
 				return
 			}
+		case task := <-my.tasks.C:
+			_ = task.Do(my)
 		case <-closeChan:
 			return
 		}

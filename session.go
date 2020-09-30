@@ -8,6 +8,7 @@ import (
 	"github.com/lixianmin/road/route"
 	"net"
 	"sync/atomic"
+	"time"
 )
 
 /********************************************************************
@@ -22,7 +23,7 @@ Copyright (C) - All Rights Reserved
 *********************************************************************/
 
 var (
-	idGenerator int64 = 0
+	globalIdGenerator int64 = 0
 )
 
 type (
@@ -33,6 +34,7 @@ type (
 		attachment  *Attachment
 		sendingChan chan []byte
 		wc          loom.WaitClose
+		tasks       *loom.TaskQueue
 
 		onHandShaken delegate
 		onClosed     delegate
@@ -52,17 +54,21 @@ type (
 )
 
 func NewSession(app *App, conn epoll.PlayerConn) *Session {
-	const bufferSize = 16
-	var agent = &Session{
+	var session = &Session{
 		app:         app,
-		id:          atomic.AddInt64(&idGenerator, 1),
+		id:          atomic.AddInt64(&globalIdGenerator, 1),
 		conn:        conn,
 		attachment:  &Attachment{},
-		sendingChan: make(chan []byte, bufferSize),
+		sendingChan: make(chan []byte, app.sendBufferSize),
 	}
 
-	loom.Go(agent.goLoop)
-	return agent
+	session.tasks = loom.NewTaskQueue(loom.TaskQueueArgs{
+		Size:      app.taskQueueSize,
+		CloseChan: session.wc.C(),
+	})
+
+	loom.Go(session.goLoop)
+	return session
 }
 
 // Close()方法可以被多次调用，只触发一次OnClosed事件
@@ -83,6 +89,25 @@ func (my *Session) OnHandShaken(handler func()) {
 // 需要保证OnClosed事件在任何情况下都会有且仅有一次触发：无论是主动断开，还是意外断开链接；无论client端有没有因为网络问题收到回复消息
 func (my *Session) OnClosed(handler func()) {
 	my.onClosed.Add(handler)
+}
+
+// 在session中加入SendCallback()的相关权衡？
+//
+// 正面：
+// 1. 异步转同步
+// 2. 分帧削峰
+// 3. player类不再需要独立的goroutine，至少节约2~8KB的goroutine初始内存，这比TaskQueue占用的内存要多得多
+//
+// 负面：
+// 1. 这个方法只对业务有可能有用，但对网络库本身并没有意义；
+// 2. 必须谨慎使用，过长的处理时间会影响后续网络消息处理，可能导致链接超时（当然你可以选择不用）
+func (my *Session) SendCallback(handler loom.TaskHandler) loom.ITask {
+	return my.tasks.SendCallback(handler)
+}
+
+// 延迟任务
+func (my *Session) SendDelayed(delayed time.Duration, handler loom.TaskHandler) {
+	my.tasks.SendDelayed(delayed, handler)
 }
 
 // 全局唯一id

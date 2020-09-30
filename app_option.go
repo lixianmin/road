@@ -17,7 +17,9 @@ type appOptions struct {
 	HeartbeatTimeout time.Duration // 心跳超时时间
 	DataCompression  bool          // 数据是否压缩
 	Logger           logo.ILogger  // 自定义日志对象，默认只输出到控制台
-	TaskChanSize     int           // 任务队列长度
+
+	SendBufferSize int // 发送缓冲区大小
+	TaskQueueSize  int // 任务队列长度
 }
 
 type AppOption func(*appOptions)
@@ -52,10 +54,18 @@ func WithLogger(log logo.ILogger) AppOption {
 	}
 }
 
-func WithTaskChanSize(size int) AppOption {
+func WithSendBufferSize(size int) AppOption {
 	return func(options *appOptions) {
 		if size > 0 {
-			options.TaskChanSize = size
+			options.SendBufferSize = size
+		}
+	}
+}
+
+func WithTaskQueueSize(size int) AppOption {
+	return func(options *appOptions) {
+		if size > 0 {
+			options.TaskQueueSize = size
 		}
 	}
 }
