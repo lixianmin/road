@@ -34,7 +34,7 @@ func (my *Session) goLoop(later loom.Later) {
 	var app = my.app
 	var heartbeatTimer = app.wheelSecond.NewTimer(app.heartbeatTimeout)
 
-	var args = &loopArgsSession{
+	var fetus = &sessionFetus{
 		lastAt:        timex.NowUnix(),
 		deltaDeadline: int64(3 * app.heartbeatTimeout / time.Second),
 	}
@@ -44,7 +44,7 @@ func (my *Session) goLoop(later loom.Later) {
 		case <-heartbeatTimer.C:
 			heartbeatTimer.Reset()
 
-			if err := my.onHeartbeat(args); err != nil {
+			if err := my.onHeartbeat(fetus); err != nil {
 				logger.Info(err.Error())
 				return
 			}
@@ -54,8 +54,8 @@ func (my *Session) goLoop(later loom.Later) {
 				return
 			}
 		case msg := <-receivedChan:
-			args.lastAt = timex.NowUnix()
-			if err := my.onReceivedMessage(args, msg); err != nil {
+			fetus.lastAt = timex.NowUnix()
+			if err := my.onReceivedMessage(fetus, msg); err != nil {
 				logger.Info(err.Error())
 				return
 			}
@@ -65,16 +65,16 @@ func (my *Session) goLoop(later loom.Later) {
 	}
 }
 
-func (my *Session) onHeartbeat(args *loopArgsSession) error {
+func (my *Session) onHeartbeat(fetus *sessionFetus) error {
 	// 如果在一个心跳时间后还没有收到握手消息，就断开链接。
 	// 登录验证之类的事情是在机会在onHandShaken事件中验证的
-	if !args.isHandshakeReceived {
+	if !fetus.isHandshakeReceived {
 		return errors.New("don't received handshake, disconnect")
 	}
 
-	deadline := timex.NowUnix() - args.deltaDeadline
-	if args.lastAt < deadline {
-		return fmt.Errorf("session heartbeat timeout, lastAt=%d, deadline=%d", args.lastAt, deadline)
+	deadline := timex.NowUnix() - fetus.deltaDeadline
+	if fetus.lastAt < deadline {
+		return fmt.Errorf("session heartbeat timeout, lastAt=%d, deadline=%d", fetus.lastAt, deadline)
 	}
 
 	// 发送心跳包，如果网络是通的，收到心跳返回时会刷新 lastAt
@@ -85,7 +85,7 @@ func (my *Session) onHeartbeat(args *loopArgsSession) error {
 	return nil
 }
 
-func (my *Session) onReceivedMessage(args *loopArgsSession, msg epoll.Message) error {
+func (my *Session) onReceivedMessage(fetus *sessionFetus, msg epoll.Message) error {
 	var err = msg.Err
 	if err != nil {
 		var err1 = fmt.Errorf("error reading next available message: %s", err.Error())
@@ -103,7 +103,7 @@ func (my *Session) onReceivedMessage(args *loopArgsSession, msg epoll.Message) e
 		var p = packets[i]
 		switch p.Type {
 		case packet.Handshake:
-			my.onReceivedHandshake(args, p)
+			my.onReceivedHandshake(fetus, p)
 		case packet.HandshakeAck:
 			// handshake的流程是 client (request) --> server (response) --> client (ack) --> server (received ack)
 			logger.Debug("Receive handshake ACK")
@@ -120,7 +120,7 @@ func (my *Session) onReceivedMessage(args *loopArgsSession, msg epoll.Message) e
 }
 
 // 如果长时间收不到握手消息，服务器会主动断开链接
-func (my *Session) onReceivedHandshake(args *loopArgsSession, p *packet.Packet) {
+func (my *Session) onReceivedHandshake(args *sessionFetus, p *packet.Packet) {
 	args.isHandshakeReceived = true
 	my.sendBytes(my.app.handshakeResponseData)
 	my.onHandShaken.Invoke()

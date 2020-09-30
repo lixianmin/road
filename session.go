@@ -38,7 +38,7 @@ type (
 		onClosed     delegate
 	}
 
-	loopArgsSession struct {
+	sessionFetus struct {
 		isHandshakeReceived bool  // 是否接收到handshake消息
 		lastAt              int64 // 最后一时收到数据的时间戳
 		deltaDeadline       int64 // 用于判断心跳是不超时
