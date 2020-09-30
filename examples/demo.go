@@ -20,10 +20,7 @@ Copyright (C) - All Rights Reserved
 func main() {
 	logo.GetLogger().SetFilterLevel(logo.LevelDebug)
 	var mux = http.NewServeMux()
-	var app = road.NewApp(road.AppArgs{
-		ServeMux:  mux,
-		ServePath: "/",
-	})
+	var app = road.NewApp(mux, road.WithServePath("/"))
 
 	var room = &Room{}
 	_ = app.Register(room, component.WithName("room"), component.WithNameFunc(strings.ToLower))

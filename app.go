@@ -52,21 +52,34 @@ type (
 	}
 )
 
-func NewApp(args AppArgs) *App {
-	args.checkInit()
-	logger.Init(args.Logger)
+func NewApp(serveMux IServeMux, opts ...AppOption) *App {
+	// 默认值
+	var options = appOptions{
+		ServePath:        "/",
+		HeartbeatTimeout: 5 * time.Second,
+		DataCompression:  false,
+		Logger:           nil,
+		TaskChanSize:     128,
+	}
+
+	// 初始化
+	for _, opt := range opts {
+		opt(&options)
+	}
+
+	logger.Init(options.Logger)
 
 	var accept = epoll.NewAcceptor(epoll.AcceptorArgs{})
-	args.ServeMux.HandleFunc(args.ServePath, accept.ServeHTTP)
+	serveMux.HandleFunc(options.ServePath, accept.ServeHTTP)
 
 	var app = &App{
 		handlers:         make(map[string]*component.Handler, 8),
 		packetDecoder:    codec.NewPomeloPacketDecoder(),
 		packetEncoder:    codec.NewPomeloPacketEncoder(),
-		messageEncoder:   message.NewMessagesEncoder(args.DataCompression),
+		messageEncoder:   message.NewMessagesEncoder(options.DataCompression),
 		serializer:       serialize.NewJsonSerializer(),
-		wheelSecond:      loom.NewWheel(time.Second, int(args.HeartbeatTimeout/time.Second)+1),
-		heartbeatTimeout: args.HeartbeatTimeout,
+		wheelSecond:      loom.NewWheel(time.Second, int(options.HeartbeatTimeout/time.Second)+1),
+		heartbeatTimeout: options.HeartbeatTimeout,
 
 		accept:   accept,
 		services: make(map[string]*component.Service),
@@ -76,9 +89,9 @@ func NewApp(args AppArgs) *App {
 	}
 
 	app.heartbeatPacketData = app.encodeHeartbeatData()
-	app.handshakeResponseData = app.encodeHandshakeData(args.DataCompression)
+	app.handshakeResponseData = app.encodeHandshakeData(options.DataCompression)
 	app.tasks = loom.NewTaskQueue(loom.TaskQueueArgs{
-		Size:      args.TaskChanSize,
+		Size:      options.TaskChanSize,
 		CloseChan: app.wc.C(),
 	})
 
