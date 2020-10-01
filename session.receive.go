@@ -149,14 +149,14 @@ func (my *Session) onReceivedData(fetus *sessionFetus, p *packet.Packet) error {
 	needReply := item.msg.Type != message.Notify
 	if fetus.rateLimitTokens <= 0 {
 		if needReply {
-			var payload, err = my.app.serializer.Marshal("reach rate limit")
+			var payload, err = my.app.serializer.Marshal("rate limit triggered, ignore processing")
 			var msg = message.Message{Type: message.Response, ID: item.msg.ID, Data: payload}
 			_ = my.sendMessageMayError(msg, err)
 		}
 
 		// 如果单位时间内消耗令牌太多，则直接断开网络
 		if fetus.rateLimitTokens <= -fetus.rateLimitWindow {
-			return errors.New("reach rate limit window")
+			return ErrKickedByRateLimit
 		}
 		return nil
 	}

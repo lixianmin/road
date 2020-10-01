@@ -9,6 +9,8 @@ author:     lixianmin
 Copyright (C) - All Rights Reserved
 *********************************************************************/
 
+var ErrKickedByRateLimit = NewError("KickedByRateLimit", "cost too many tokens in a rate limit window")
+
 type Error struct {
 	Code    string `json:"code"`
 	Message string `json:"message"`
