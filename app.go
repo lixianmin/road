@@ -67,7 +67,7 @@ func NewApp(serveMux IServeMux, opts ...AppOption) *App {
 		AcceptorReceivedChanSize: 1024,
 		SessionSendingChanSize:   16,
 		SessionTaskQueueSize:     64,
-		SessionRateLimitBySecond: 10,
+		SessionRateLimitBySecond: 2,
 	}
 
 	// 初始化
