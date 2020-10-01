@@ -28,7 +28,7 @@ type Poll struct {
 	wc              loom.WaitClose
 }
 
-type loopArgsPoll struct {
+type pollFetus struct {
 	events []unix.EpollEvent
 }
 
@@ -51,7 +51,7 @@ func newPoll(pollBufferSize int, receivedChanLen int) *Poll {
 
 func (my *Poll) goLoop(later loom.Later, bufferSize int) {
 	defer my.Close()
-	var args = &loopArgsPoll{
+	var fetus = &pollFetus{
 		events: make([]unix.EpollEvent, bufferSize, bufferSize),
 	}
 
@@ -61,7 +61,7 @@ func (my *Poll) goLoop(later loom.Later, bufferSize int) {
 		case <-closeChan:
 			return
 		default:
-			my.pollData(args)
+			my.pollData(fetus)
 		}
 	}
 }
@@ -100,9 +100,9 @@ func (my *Poll) remove(item *WSConn) error {
 	return err
 }
 
-func (my *Poll) pollData(args *loopArgsPoll) {
+func (my *Poll) pollData(fetus *pollFetus) {
 retry:
-	var events = args.events
+	var events = fetus.events
 	n, err := unix.EpollWait(my.fd, events, -1)
 	if err != nil {
 		if err == unix.EINTR {

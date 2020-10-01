@@ -35,7 +35,7 @@ type Poll struct {
 	}
 }
 
-type loopArgsPoll struct {
+type pollFetus struct {
 	snapshot []syscall.Kevent_t
 	events   []syscall.Kevent_t
 	timeout  syscall.Timespec
@@ -70,7 +70,7 @@ func newPoll(pollBufferSize int, receivedChanLen int) *Poll {
 
 func (my *Poll) goLoop(later loom.Later, bufferSize int) {
 	defer my.Close()
-	var args = &loopArgsPoll{
+	var fetus = &pollFetus{
 		snapshot: make([]syscall.Kevent_t, bufferSize),
 		events:   make([]syscall.Kevent_t, bufferSize),
 		timeout:  syscall.NsecToTimespec(1e7), // 将超时时间改为10ms，这其实是上一轮没有数据时，下一轮fd们的最长等待时间
@@ -82,7 +82,7 @@ func (my *Poll) goLoop(later loom.Later, bufferSize int) {
 		case <-closeChan:
 			return
 		default:
-			my.pollData(args)
+			my.pollData(fetus)
 		}
 	}
 }
@@ -151,20 +151,20 @@ func (my *Poll) remove(item *WSConn) error {
 	return err
 }
 
-func (my *Poll) takeSnapshot(args *loopArgsPoll) {
+func (my *Poll) takeSnapshot(fetus *pollFetus) {
 	my.changes.Lock()
 	var snapCount = len(my.changes.d)
-	args.snapshot = args.snapshot[:snapCount]
+	fetus.snapshot = fetus.snapshot[:snapCount]
 	for i := 0; i < snapCount; i++ {
-		args.snapshot[i] = my.changes.d[i]
+		fetus.snapshot[i] = my.changes.d[i]
 	}
 	my.changes.Unlock()
 }
 
-func (my *Poll) pollData(args *loopArgsPoll) {
+func (my *Poll) pollData(fetus *pollFetus) {
 retry:
-	my.takeSnapshot(args)
-	num, err := syscall.Kevent(my.fd, args.snapshot, args.events, &args.timeout)
+	my.takeSnapshot(fetus)
+	num, err := syscall.Kevent(my.fd, fetus.snapshot, fetus.events, &fetus.timeout)
 
 	if err != nil {
 		if err == syscall.EINTR {
@@ -174,11 +174,11 @@ retry:
 	}
 
 	for i := 0; i < num; i++ {
-		var ident = int64(args.events[i].Ident)
+		var ident = int64(fetus.events[i].Ident)
 		var item = my.connections.Get1(ident).(*WSConn)
 
 		// EOF
-		if (args.events[i].Flags & syscall.EV_EOF) == syscall.EV_EOF {
+		if (fetus.events[i].Flags & syscall.EV_EOF) == syscall.EV_EOF {
 			item.receivedChan <- Message{Err: io.EOF}
 			_ = my.remove(item)
 			continue

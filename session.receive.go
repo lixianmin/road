@@ -122,8 +122,8 @@ func (my *Session) onReceivedMessage(fetus *sessionFetus, msg epoll.Message) err
 }
 
 // 如果长时间收不到握手消息，服务器会主动断开链接
-func (my *Session) onReceivedHandshake(args *sessionFetus, p *packet.Packet) {
-	args.isHandshakeReceived = true
+func (my *Session) onReceivedHandshake(fetus *sessionFetus, p *packet.Packet) {
+	fetus.isHandshakeReceived = true
 	my.sendBytes(my.app.handshakeResponseData)
 	my.onHandShaken.Invoke()
 }
