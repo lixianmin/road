@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"github.com/lixianmin/got/loom"
+	"github.com/lixianmin/got/mathx"
 	"github.com/lixianmin/got/timex"
 	"github.com/lixianmin/road/component"
 	"github.com/lixianmin/road/conn/message"
@@ -34,15 +35,23 @@ func (my *Session) goLoop(later loom.Later) {
 	var app = my.app
 	var heartbeatTimer = app.wheelSecond.NewTimer(app.heartbeatTimeout)
 
+	var heartbeatSeconds = int32(app.heartbeatTimeout / time.Second)
+	var stepRateLimitTokens = heartbeatSeconds * app.rateLimitBySecond
+
 	var fetus = &sessionFetus{
-		lastAt:        timex.NowUnix(),
-		deltaDeadline: int64(3 * app.heartbeatTimeout / time.Second),
+		lastAt:          timex.NowUnix(),
+		deltaDeadline:   int64(3 * app.heartbeatTimeout / time.Second),
+		rateLimitTokens: stepRateLimitTokens,
+		rateLimitWindow: 2 * stepRateLimitTokens,
 	}
 
 	for {
 		select {
 		case <-heartbeatTimer.C:
 			heartbeatTimer.Reset()
+
+			// 使用时间窗口限制令牌数
+			fetus.rateLimitTokens = mathx.MinInt32(fetus.rateLimitWindow, fetus.rateLimitTokens+stepRateLimitTokens)
 
 			if err := my.onHeartbeat(fetus); err != nil {
 				logger.Info(err.Error())
@@ -55,6 +64,7 @@ func (my *Session) goLoop(later loom.Later) {
 			}
 		case msg := <-receivedChan:
 			fetus.lastAt = timex.NowUnix()
+			fetus.rateLimitTokens--
 			if err := my.onReceivedMessage(fetus, msg); err != nil {
 				logger.Info(err.Error())
 				return
@@ -110,7 +120,7 @@ func (my *Session) onReceivedMessage(fetus *sessionFetus, msg epoll.Message) err
 			// handshake的流程是 client (request) --> server (response) --> client (ack) --> server (received ack)
 			logger.Debug("Receive handshake ACK")
 		case packet.Data:
-			if err := my.onReceivedData(p); err != nil {
+			if err := my.onReceivedData(fetus, p); err != nil {
 				return err
 			}
 		case packet.Heartbeat:
@@ -128,20 +138,37 @@ func (my *Session) onReceivedHandshake(fetus *sessionFetus, p *packet.Packet) {
 	my.onHandShaken.Invoke()
 }
 
-func (my *Session) onReceivedData(p *packet.Packet) error {
+func (my *Session) onReceivedData(fetus *sessionFetus, p *packet.Packet) error {
 	item, err := my.decodeReceivedData(p);
 	if err != nil {
 		var err1 = fmt.Errorf("failed to process packet: %s", err.Error())
 		return err1
 	}
 
+	// 如果令牌数耗尽，则拒绝处理，并给客户端报错
+	needReply := item.msg.Type != message.Notify
+	if fetus.rateLimitTokens <= 0 {
+		if needReply {
+			var payload, err = my.app.serializer.Marshal("reach rate limit")
+			var msg = message.Message{Type: message.Response, ID: item.msg.ID, Data: payload}
+			_ = my.sendMessageMayError(msg, err)
+		}
+
+		// 如果单位时间内消耗令牌太多，则直接断开网络
+		if fetus.rateLimitTokens <= -fetus.rateLimitWindow {
+			return errors.New("reach rate limit window")
+		}
+		return nil
+	}
+
+	// 取handler，准备处理协议
 	handler, err := my.app.getHandler(item.route)
 	if err != nil {
 		return err
 	}
 
 	payload, err := processReceivedData(item, handler, my.app.serializer, my.app.hookCallback)
-	if item.msg.Type != message.Notify {
+	if needReply {
 		var msg = message.Message{Type: message.Response, ID: item.msg.ID, Data: payload}
 		_ = my.sendMessageMayError(msg, err)
 	}

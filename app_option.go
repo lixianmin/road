@@ -22,6 +22,7 @@ type appOptions struct {
 	AcceptorPollBufferSize   int           // poll的事件缓冲的长度
 	SessionSendingChanSize   int           // session的发送缓冲区大小
 	SessionTaskQueueSize     int           // session的任务队列长度
+	SessionRateLimitBySecond int           // session每秒限流
 }
 
 type AppOption func(*appOptions)
@@ -92,6 +93,14 @@ func WithSessionTaskQueueSize(size int) AppOption {
 	return func(options *appOptions) {
 		if size > 0 {
 			options.SessionTaskQueueSize = size
+		}
+	}
+}
+
+func WithSessionRateLimitBySecond(limit int) AppOption {
+	return func(options *appOptions) {
+		if limit > 0 {
+			options.SessionRateLimitBySecond = limit
 		}
 	}
 }

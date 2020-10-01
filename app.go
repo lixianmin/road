@@ -39,6 +39,7 @@ type (
 		handshakeResponseData []byte
 		sendingChanSize       int
 		taskQueueSize         int
+		rateLimitBySecond     int32
 
 		accept   *epoll.Acceptor
 		sessions loom.Map
@@ -66,6 +67,7 @@ func NewApp(serveMux IServeMux, opts ...AppOption) *App {
 		AcceptorReceivedChanSize: 1024,
 		SessionSendingChanSize:   16,
 		SessionTaskQueueSize:     64,
+		SessionRateLimitBySecond: 1,
 	}
 
 	// 初始化
@@ -82,15 +84,16 @@ func NewApp(serveMux IServeMux, opts ...AppOption) *App {
 	serveMux.HandleFunc(options.ServePath, accept.ServeHTTP)
 
 	var app = &App{
-		handlers:         make(map[string]*component.Handler, 8),
-		packetDecoder:    codec.NewPomeloPacketDecoder(),
-		packetEncoder:    codec.NewPomeloPacketEncoder(),
-		messageEncoder:   message.NewMessagesEncoder(options.DataCompression),
-		serializer:       serialize.NewJsonSerializer(),
-		wheelSecond:      loom.NewWheel(time.Second, int(options.HeartbeatTimeout/time.Second)+1),
-		heartbeatTimeout: options.HeartbeatTimeout,
-		sendingChanSize:  options.SessionSendingChanSize,
-		taskQueueSize:    options.SessionTaskQueueSize,
+		handlers:          make(map[string]*component.Handler, 8),
+		packetDecoder:     codec.NewPomeloPacketDecoder(),
+		packetEncoder:     codec.NewPomeloPacketEncoder(),
+		messageEncoder:    message.NewMessagesEncoder(options.DataCompression),
+		serializer:        serialize.NewJsonSerializer(),
+		wheelSecond:       loom.NewWheel(time.Second, int(options.HeartbeatTimeout/time.Second)+1),
+		heartbeatTimeout:  options.HeartbeatTimeout,
+		sendingChanSize:   options.SessionSendingChanSize,
+		taskQueueSize:     options.SessionTaskQueueSize,
+		rateLimitBySecond: int32(options.SessionRateLimitBySecond),
 
 		accept:   accept,
 		services: make(map[string]*component.Service),
