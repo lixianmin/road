@@ -98,11 +98,11 @@ func (my *TcpPoll) Close() error {
 }
 
 // 记录当前活跃的链接，出错后通过Remove方法移除
-func (my *TcpPoll) add(conn net.Conn) *tcpConn {
+func (my *TcpPoll) add(conn net.Conn) *TcpConn {
 	var fd = socketFD(conn)
 
 	var event = syscall.Kevent_t{Ident: uint64(fd), Flags: syscall.EV_ADD | syscall.EV_EOF, Filter: syscall.EVFILT_READ}
-	var playerConn *tcpConn
+	var playerConn *TcpConn
 
 	my.changes.Lock()
 	{
@@ -115,7 +115,7 @@ func (my *TcpPoll) add(conn net.Conn) *tcpConn {
 	return playerConn
 }
 
-func (my *TcpPoll) remove(item *tcpConn) error {
+func (my *TcpPoll) remove(item *TcpConn) error {
 	my.changes.Lock()
 	{
 		// 找到fd出现的位置
@@ -168,7 +168,7 @@ retry:
 
 	for i := 0; i < num; i++ {
 		var ident = int64(fetus.events[i].Ident)
-		var item = my.connections.Get1(ident).(*tcpConn)
+		var item = my.connections.Get1(ident).(*TcpConn)
 
 		// EOF
 		if (fetus.events[i].Flags & syscall.EV_EOF) == syscall.EV_EOF {

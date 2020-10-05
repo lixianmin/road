@@ -15,15 +15,15 @@ author:     lixianmin
 Copyright (C) - All Rights Reserved
 *********************************************************************/
 
-type tcpConn struct {
+type TcpConn struct {
 	conn         net.Conn
 	fd           int64
 	receivedChan chan Message
 }
 
-func newTcpConn(conn net.Conn, fd int64, receivedChanSize int) *tcpConn {
+func newTcpConn(conn net.Conn, fd int64, receivedChanSize int) *TcpConn {
 	var receivedChan = make(chan Message, receivedChanSize)
-	var my = &tcpConn{
+	var my = &TcpConn{
 		conn:         conn,
 		fd:           fd,
 		receivedChan: receivedChan,
@@ -32,12 +32,12 @@ func newTcpConn(conn net.Conn, fd int64, receivedChanSize int) *tcpConn {
 	return my
 }
 
-func (my *tcpConn) GetReceivedChan() <-chan Message {
+func (my *TcpConn) GetReceivedChan() <-chan Message {
 	return my.receivedChan
 }
 
 // GetNextMessage reads the next message available in the stream
-func (my *tcpConn) GetNextMessage() (b []byte, err error) {
+func (my *TcpConn) GetNextMessage() (b []byte, err error) {
 	defer func() {
 		e := recover()
 		if e == nil {
@@ -78,22 +78,22 @@ func (my *tcpConn) GetNextMessage() (b []byte, err error) {
 // Write writes data to the connection.
 // Write can be made to time out and return an Error with Timeout() == true
 // after a fixed time limit; see SetDeadline and SetWriteDeadline.
-func (my *tcpConn) Write(b []byte) (int, error) {
+func (my *TcpConn) Write(b []byte) (int, error) {
 	return my.conn.Write(b)
 }
 
 // Close closes the connection.
 // Any blocked Read or Write operations will be unblocked and return errors.
-func (my *tcpConn) Close() error {
+func (my *TcpConn) Close() error {
 	return my.conn.Close()
 }
 
 // LocalAddr returns the local address.
-func (my *tcpConn) LocalAddr() net.Addr {
+func (my *TcpConn) LocalAddr() net.Addr {
 	return my.conn.LocalAddr()
 }
 
 // RemoteAddr returns the remote address.
-func (my *tcpConn) RemoteAddr() net.Addr {
+func (my *TcpConn) RemoteAddr() net.Addr {
 	return my.conn.RemoteAddr()
 }

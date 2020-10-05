@@ -72,7 +72,7 @@ func (my *TcpPoll) Close() error {
 	})
 }
 
-func (my *TcpPoll) add(conn net.Conn) *tcpConn {
+func (my *TcpPoll) add(conn net.Conn) *TcpConn {
 	// Extract file descriptor associated with the connection
 	fd := socketFD(conn)
 
@@ -86,7 +86,7 @@ func (my *TcpPoll) add(conn net.Conn) *tcpConn {
 	return playerConn
 }
 
-func (my *TcpPoll) remove(item *tcpConn) error {
+func (my *TcpPoll) remove(item *TcpConn) error {
 	my.connections.Remove(item.fd)
 	_ = item.Close()
 	var err = unix.EpollCtl(my.fd, syscall.EPOLL_CTL_DEL, int(item.fd), nil)
@@ -106,7 +106,7 @@ retry:
 
 	for i := 0; i < n; i++ {
 		var fd = int64(events[i].Fd)
-		var item = my.connections.Get1(fd).(*tcpConn)
+		var item = my.connections.Get1(fd).(*TcpConn)
 		if (events[i].Events & unix.POLLHUP) == unix.POLLHUP {
 			_ = my.remove(item)
 			continue
