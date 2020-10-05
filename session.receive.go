@@ -137,7 +137,7 @@ func (my *Session) onReceivedMessage(fetus *sessionFetus, msg epoll.Message) err
 func (my *Session) onReceivedHandshake(fetus *sessionFetus, p *packet.Packet) error {
 	fetus.isHandshakeReceived = true
 	var err = my.writeBytes(my.app.handshakeResponseData)
-	if err != nil {
+	if err == nil {
 		my.onHandShaken.Invoke()
 	}
 
