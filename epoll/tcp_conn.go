@@ -1,10 +1,10 @@
 package epoll
 
 import (
+	"bytes"
 	"github.com/lixianmin/road/conn/codec"
 	"github.com/lixianmin/road/ifs"
 	"io"
-	"io/ioutil"
 	"net"
 )
 
@@ -23,13 +23,13 @@ type tcpConn struct {
 
 func newTcpConn(conn net.Conn, fd int64, receivedChanSize int) *tcpConn {
 	var receivedChan = make(chan Message, receivedChanSize)
-	var item = &tcpConn{
+	var my = &tcpConn{
 		conn:         conn,
 		fd:           fd,
 		receivedChan: receivedChan,
 	}
 
-	return item
+	return my
 }
 
 func (my *tcpConn) GetReceivedChan() <-chan Message {
@@ -38,26 +38,29 @@ func (my *tcpConn) GetReceivedChan() <-chan Message {
 
 // GetNextMessage reads the next message available in the stream
 func (my *tcpConn) GetNextMessage() (b []byte, err error) {
-	header, err := ioutil.ReadAll(io.LimitReader(my.conn, codec.HeadLength))
+	var buff bytes.Buffer
+	_, err = buff.ReadFrom(io.LimitReader(my.conn, codec.HeadLength))
 	if err != nil {
 		return nil, err
 	}
 
+	var header = buff.Bytes()
 	msgSize, _, err := codec.ParseHeader(header)
 	if err != nil {
 		return nil, err
 	}
 
-	msgData, err := ioutil.ReadAll(io.LimitReader(my.conn, int64(msgSize)))
+	_, err = buff.ReadFrom(io.LimitReader(my.conn, int64(msgSize)))
 	if err != nil {
 		return nil, err
 	}
 
-	if len(msgData) < msgSize {
+	var total = buff.Bytes()
+	if len(total) < codec.HeadLength+msgSize {
 		return nil, ifs.ErrReceivedMsgSmallerThanExpected
 	}
 
-	return append(header, msgData...), nil
+	return total, nil
 }
 
 // Write writes data to the connection.
