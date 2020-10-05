@@ -81,12 +81,7 @@ func (my *TcpPoll) add(conn net.Conn) *tcpConn {
 		return nil
 	}
 
-	var playerConn = &tcpConn{
-		fd:           fd,
-		conn:         conn,
-		receivedChan: make(chan Message, my.receivedChanSize),
-	}
-
+	var playerConn = newTcpConn(conn, fd, my.receivedChanSize)
 	my.connections.Put(fd, playerConn)
 	return playerConn
 }

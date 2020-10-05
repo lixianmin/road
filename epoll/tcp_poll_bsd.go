@@ -102,17 +102,12 @@ func (my *TcpPoll) add(conn net.Conn) *tcpConn {
 	var fd = socketFD(conn)
 
 	var event = syscall.Kevent_t{Ident: uint64(fd), Flags: syscall.EV_ADD | syscall.EV_EOF, Filter: syscall.EVFILT_READ}
-	var receivedChan = make(chan Message, my.receivedChanSize)
 	var playerConn *tcpConn
 
 	my.changes.Lock()
 	{
 		my.changes.d = append(my.changes.d, event)
-		playerConn = &tcpConn{
-			fd:           fd,
-			conn:         conn,
-			receivedChan: receivedChan,
-		}
+		playerConn = newTcpConn(conn, fd, my.receivedChanSize)
 		my.connections.Put(fd, playerConn)
 	}
 	my.changes.Unlock()

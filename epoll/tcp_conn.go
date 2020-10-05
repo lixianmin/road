@@ -21,6 +21,17 @@ type tcpConn struct {
 	receivedChan chan Message
 }
 
+func newTcpConn(conn net.Conn, fd int64, receivedChanSize int) *tcpConn {
+	var receivedChan = make(chan Message, receivedChanSize)
+	var item = &tcpConn{
+		conn:         conn,
+		fd:           fd,
+		receivedChan: receivedChan,
+	}
+
+	return item
+}
+
 func (my *tcpConn) GetReceivedChan() <-chan Message {
 	return my.receivedChan
 }
