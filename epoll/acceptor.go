@@ -1,14 +1,11 @@
-package road
-
-import "net/http"
+package epoll
 
 /********************************************************************
-created:    2020-06-03
+created:    2020-10-05
 author:     lixianmin
 
 Copyright (C) - All Rights Reserved
 *********************************************************************/
-
-type IServeMux interface {
-	HandleFunc(pattern string, handler func(http.ResponseWriter, *http.Request))
+type Acceptor interface {
+	GetConnChan() chan PlayerConn
 }

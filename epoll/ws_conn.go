@@ -12,20 +12,20 @@ author:     lixianmin
 Copyright (C) - All Rights Reserved
 *********************************************************************/
 
-type WSConn struct {
+type WsConn struct {
 	conn         net.Conn
 	fd           int64
 	receivedChan chan Message
 }
 
-func (my *WSConn) GetReceivedChan() <-chan Message {
+func (my *WsConn) GetReceivedChan() <-chan Message {
 	return my.receivedChan
 }
 
 // Write writes data to the connection.
 // Write can be made to time out and return an Error with Timeout() == true
 // after a fixed time limit; see SetDeadline and SetWriteDeadline.
-func (my *WSConn) Write(b []byte) (int, error) {
+func (my *WsConn) Write(b []byte) (int, error) {
 	// var err = wsutil.WriteServerBinary(my.conn, b)
 	// 等价于前面注释掉的代码
 	var frame = ws.NewBinaryFrame(b)
@@ -39,17 +39,17 @@ func (my *WSConn) Write(b []byte) (int, error) {
 
 // Close closes the connection.
 // Any blocked Read or Write operations will be unblocked and return errors.
-func (my *WSConn) Close() error {
+func (my *WsConn) Close() error {
 	return my.conn.Close()
 }
 
 // LocalAddr returns the local address.
-func (my *WSConn) LocalAddr() net.Addr {
+func (my *WsConn) LocalAddr() net.Addr {
 	return my.conn.LocalAddr()
 }
 
 // RemoteAddr returns the remote address.
-func (my *WSConn) RemoteAddr() net.Addr {
+func (my *WsConn) RemoteAddr() net.Addr {
 	return my.conn.RemoteAddr()
 }
 
@@ -68,7 +68,7 @@ func (my *WSConn) RemoteAddr() net.Addr {
 //// the deadline after successful Read or Write calls.
 ////
 //// A zero value for t means I/O operations will not time out.
-//func (my *WSConn) SetDeadline(t time.Time) error {
+//func (my *WsConn) SetDeadline(t time.Time) error {
 //	if err := my.SetReadDeadline(t); err != nil {
 //		return err
 //	}
@@ -79,7 +79,7 @@ func (my *WSConn) RemoteAddr() net.Addr {
 //// SetReadDeadline sets the deadline for future Read calls
 //// and any currently-blocked Read call.
 //// A zero value for t means Read will not time out.
-//func (my *WSConn) SetReadDeadline(t time.Time) error {
+//func (my *WsConn) SetReadDeadline(t time.Time) error {
 //	return my.conn.SetReadDeadline(t)
 //}
 //
@@ -88,6 +88,6 @@ func (my *WSConn) RemoteAddr() net.Addr {
 //// Even if write times out, it may return n > 0, indicating that
 //// some of the data was successfully written.
 //// A zero value for t means Write will not time out.
-//func (my *WSConn) SetWriteDeadline(t time.Time) error {
+//func (my *WsConn) SetWriteDeadline(t time.Time) error {
 //	return my.conn.SetWriteDeadline(t)
 //}

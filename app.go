@@ -41,7 +41,7 @@ type (
 		taskQueueSize         int
 		rateLimitBySecond     int32
 
-		accept   *epoll.WSAcceptor
+		accept   epoll.Acceptor
 		sessions loom.Map
 		wc       loom.WaitClose
 		tasks    *loom.TaskQueue
@@ -55,16 +55,12 @@ type (
 	}
 )
 
-func NewApp(serveMux IServeMux, opts ...AppOption) *App {
+func NewApp(accept epoll.Acceptor, opts ...AppOption) *App {
 	// 默认值
 	var options = appOptions{
-		ServePath:                "/",
 		HeartbeatTimeout:         5 * time.Second,
 		DataCompression:          false,
 		Logger:                   nil,
-		AcceptorConnChanSize:     16,
-		AcceptorPollBufferSize:   16,
-		AcceptorReceivedChanSize: 1024,
 		SessionSendingChanSize:   16,
 		SessionTaskQueueSize:     64,
 		SessionRateLimitBySecond: 2,
@@ -76,12 +72,6 @@ func NewApp(serveMux IServeMux, opts ...AppOption) *App {
 	}
 
 	logger.Init(options.Logger)
-
-	var accept = epoll.NewWSAcceptor(epoll.WithConnChanSize(options.AcceptorConnChanSize),
-		epoll.WithPollBufferSize(options.AcceptorPollBufferSize),
-		epoll.WithReceivedChanSize(options.AcceptorReceivedChanSize),
-	)
-	serveMux.HandleFunc(options.ServePath, accept.ServeHTTP)
 
 	var app = &App{
 		handlers:          make(map[string]*component.Handler, 8),

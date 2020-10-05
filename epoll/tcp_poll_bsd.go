@@ -3,8 +3,6 @@
 package epoll
 
 import (
-	"github.com/gobwas/ws"
-	"github.com/gobwas/ws/wsutil"
 	"github.com/lixianmin/got/loom"
 	"io"
 	"net"
@@ -13,7 +11,7 @@ import (
 )
 
 /********************************************************************
-created:    2020-09-06
+created:    2020-10-05
 author:     lixianmin
 
 参考:
@@ -23,7 +21,7 @@ author:     lixianmin
 Copyright (C) - All Rights Reserved
 *********************************************************************/
 
-type WsPoll struct {
+type TcpPoll struct {
 	receivedChanSize int
 	fd               int
 	connections      loom.Map
@@ -35,13 +33,13 @@ type WsPoll struct {
 	}
 }
 
-type wsPollFetus struct {
+type tcpPollFetus struct {
 	snapshot []syscall.Kevent_t
 	events   []syscall.Kevent_t
 	timeout  syscall.Timespec
 }
 
-func newWsPoll(pollBufferSize int, receivedChanLen int) *WsPoll {
+func newTcpPoll(pollBufferSize int, receivedChanLen int) *TcpPoll {
 	fd, err := syscall.Kqueue()
 	if err != nil {
 		panic(err)
@@ -55,7 +53,7 @@ func newWsPoll(pollBufferSize int, receivedChanLen int) *WsPoll {
 		panic(err)
 	}
 
-	var poll = &WsPoll{
+	var poll = &TcpPoll{
 		receivedChanSize: receivedChanLen,
 		fd:               fd,
 	}
@@ -68,9 +66,9 @@ func newWsPoll(pollBufferSize int, receivedChanLen int) *WsPoll {
 	return poll
 }
 
-func (my *WsPoll) goLoop(later loom.Later, bufferSize int) {
+func (my *TcpPoll) goLoop(later loom.Later, bufferSize int) {
 	defer my.Close()
-	var fetus = &wsPollFetus{
+	var fetus = &tcpPollFetus{
 		snapshot: make([]syscall.Kevent_t, bufferSize),
 		events:   make([]syscall.Kevent_t, bufferSize),
 		timeout:  syscall.NsecToTimespec(1e7), // 将超时时间改为10ms，这其实是上一轮没有数据时，下一轮fd们的最长等待时间
@@ -87,7 +85,7 @@ func (my *WsPoll) goLoop(later loom.Later, bufferSize int) {
 	}
 }
 
-func (my *WsPoll) Close() error {
+func (my *TcpPoll) Close() error {
 	return my.wc.Close(func() error {
 		my.changes.Lock()
 		my.changes.d = nil
@@ -100,17 +98,17 @@ func (my *WsPoll) Close() error {
 }
 
 // 记录当前活跃的链接，出错后通过Remove方法移除
-func (my *WsPoll) add(conn net.Conn) *WsConn {
+func (my *TcpPoll) add(conn net.Conn) *tcpConn {
 	var fd = socketFD(conn)
 
 	var event = syscall.Kevent_t{Ident: uint64(fd), Flags: syscall.EV_ADD | syscall.EV_EOF, Filter: syscall.EVFILT_READ}
 	var receivedChan = make(chan Message, my.receivedChanSize)
-	var playerConn *WsConn
+	var playerConn *tcpConn
 
 	my.changes.Lock()
 	{
 		my.changes.d = append(my.changes.d, event)
-		playerConn = &WsConn{
+		playerConn = &tcpConn{
 			fd:           fd,
 			conn:         conn,
 			receivedChan: receivedChan,
@@ -122,7 +120,7 @@ func (my *WsPoll) add(conn net.Conn) *WsConn {
 	return playerConn
 }
 
-func (my *WsPoll) remove(item *WsConn) error {
+func (my *TcpPoll) remove(item *tcpConn) error {
 	my.changes.Lock()
 	{
 		// 找到fd出现的位置
@@ -151,7 +149,7 @@ func (my *WsPoll) remove(item *WsConn) error {
 	return err
 }
 
-func (my *WsPoll) takeSnapshot(fetus *wsPollFetus) {
+func (my *TcpPoll) takeSnapshot(fetus *tcpPollFetus) {
 	my.changes.Lock()
 	var snapCount = len(my.changes.d)
 	fetus.snapshot = fetus.snapshot[:snapCount]
@@ -161,7 +159,7 @@ func (my *WsPoll) takeSnapshot(fetus *wsPollFetus) {
 	my.changes.Unlock()
 }
 
-func (my *WsPoll) pollData(fetus *wsPollFetus) {
+func (my *TcpPoll) pollData(fetus *tcpPollFetus) {
 retry:
 	my.takeSnapshot(fetus)
 	num, err := syscall.Kevent(my.fd, fetus.snapshot, fetus.events, &fetus.timeout)
@@ -175,7 +173,7 @@ retry:
 
 	for i := 0; i < num; i++ {
 		var ident = int64(fetus.events[i].Ident)
-		var item = my.connections.Get1(ident).(*WsConn)
+		var item = my.connections.Get1(ident).(*tcpConn)
 
 		// EOF
 		if (fetus.events[i].Flags & syscall.EV_EOF) == syscall.EV_EOF {
@@ -184,7 +182,7 @@ retry:
 			continue
 		}
 
-		var data, _, err = wsutil.ReadData(item.conn, ws.StateServerSide)
+		var data, err = item.GetNextMessage()
 		if err != nil {
 			item.receivedChan <- Message{Err: err}
 			_ = my.remove(item)
