@@ -41,7 +41,7 @@ type (
 		taskQueueSize         int
 		rateLimitBySecond     int32
 
-		accept   *epoll.Acceptor
+		accept   *epoll.WSAcceptor
 		sessions loom.Map
 		wc       loom.WaitClose
 		tasks    *loom.TaskQueue
@@ -77,7 +77,7 @@ func NewApp(serveMux IServeMux, opts ...AppOption) *App {
 
 	logger.Init(options.Logger)
 
-	var accept = epoll.NewAcceptor(epoll.WithConnChanSize(options.AcceptorConnChanSize),
+	var accept = epoll.NewWSAcceptor(epoll.WithConnChanSize(options.AcceptorConnChanSize),
 		epoll.WithPollBufferSize(options.AcceptorPollBufferSize),
 		epoll.WithReceivedChanSize(options.AcceptorReceivedChanSize),
 	)

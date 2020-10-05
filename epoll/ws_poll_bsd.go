@@ -23,7 +23,7 @@ author:     lixianmin
 Copyright (C) - All Rights Reserved
 *********************************************************************/
 
-type Poll struct {
+type WSPoll struct {
 	receivedChanLen int
 	fd              int
 	connections     loom.Map
@@ -41,7 +41,7 @@ type pollFetus struct {
 	timeout  syscall.Timespec
 }
 
-func newPoll(pollBufferSize int, receivedChanLen int) *Poll {
+func newPoll(pollBufferSize int, receivedChanLen int) *WSPoll {
 	fd, err := syscall.Kqueue()
 	if err != nil {
 		panic(err)
@@ -55,7 +55,7 @@ func newPoll(pollBufferSize int, receivedChanLen int) *Poll {
 		panic(err)
 	}
 
-	var poll = &Poll{
+	var poll = &WSPoll{
 		receivedChanLen: receivedChanLen,
 		fd:              fd,
 	}
@@ -68,7 +68,7 @@ func newPoll(pollBufferSize int, receivedChanLen int) *Poll {
 	return poll
 }
 
-func (my *Poll) goLoop(later loom.Later, bufferSize int) {
+func (my *WSPoll) goLoop(later loom.Later, bufferSize int) {
 	defer my.Close()
 	var fetus = &pollFetus{
 		snapshot: make([]syscall.Kevent_t, bufferSize),
@@ -87,7 +87,7 @@ func (my *Poll) goLoop(later loom.Later, bufferSize int) {
 	}
 }
 
-func (my *Poll) Close() error {
+func (my *WSPoll) Close() error {
 	return my.wc.Close(func() error {
 		my.changes.Lock()
 		my.changes.d = nil
@@ -100,7 +100,7 @@ func (my *Poll) Close() error {
 }
 
 // 记录当前活跃的链接，出错后通过Remove方法移除
-func (my *Poll) add(conn net.Conn) *WSConn {
+func (my *WSPoll) add(conn net.Conn) *WSConn {
 	var fd = socketFD(conn)
 
 	var event = syscall.Kevent_t{Ident: uint64(fd), Flags: syscall.EV_ADD | syscall.EV_EOF, Filter: syscall.EVFILT_READ}
@@ -122,7 +122,7 @@ func (my *Poll) add(conn net.Conn) *WSConn {
 	return playerConn
 }
 
-func (my *Poll) remove(item *WSConn) error {
+func (my *WSPoll) remove(item *WSConn) error {
 	my.changes.Lock()
 	{
 		// 找到fd出现的位置
@@ -151,7 +151,7 @@ func (my *Poll) remove(item *WSConn) error {
 	return err
 }
 
-func (my *Poll) takeSnapshot(fetus *pollFetus) {
+func (my *WSPoll) takeSnapshot(fetus *pollFetus) {
 	my.changes.Lock()
 	var snapCount = len(my.changes.d)
 	fetus.snapshot = fetus.snapshot[:snapCount]
@@ -161,7 +161,7 @@ func (my *Poll) takeSnapshot(fetus *pollFetus) {
 	my.changes.Unlock()
 }
 
-func (my *Poll) pollData(fetus *pollFetus) {
+func (my *WSPoll) pollData(fetus *pollFetus) {
 retry:
 	my.takeSnapshot(fetus)
 	num, err := syscall.Kevent(my.fd, fetus.snapshot, fetus.events, &fetus.timeout)

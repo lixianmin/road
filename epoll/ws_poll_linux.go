@@ -21,7 +21,7 @@ author:     lixianmin
 Copyright (C) - All Rights Reserved
 *********************************************************************/
 
-type Poll struct {
+type WSPoll struct {
 	receivedChanLen int
 	fd              int
 	connections     loom.Map
@@ -32,13 +32,13 @@ type pollFetus struct {
 	events []unix.EpollEvent
 }
 
-func newPoll(pollBufferSize int, receivedChanLen int) *Poll {
+func newPoll(pollBufferSize int, receivedChanLen int) *WSPoll {
 	fd, err := unix.EpollCreate1(0)
 	if err != nil {
 		return nil
 	}
 
-	var poll = &Poll{
+	var poll = &WSPoll{
 		receivedChanLen: receivedChanLen,
 		fd:              fd,
 	}
@@ -49,7 +49,7 @@ func newPoll(pollBufferSize int, receivedChanLen int) *Poll {
 	return poll
 }
 
-func (my *Poll) goLoop(later loom.Later, bufferSize int) {
+func (my *WSPoll) goLoop(later loom.Later, bufferSize int) {
 	defer my.Close()
 	var fetus = &pollFetus{
 		events: make([]unix.EpollEvent, bufferSize, bufferSize),
@@ -66,7 +66,7 @@ func (my *Poll) goLoop(later loom.Later, bufferSize int) {
 	}
 }
 
-func (my *Poll) Close() error {
+func (my *WSPoll) Close() error {
 	return my.wc.Close(func() error {
 		my.connections = loom.Map{}
 		var err = unix.Close(my.fd)
@@ -74,7 +74,7 @@ func (my *Poll) Close() error {
 	})
 }
 
-func (my *Poll) add(conn net.Conn) *WSConn {
+func (my *WSPoll) add(conn net.Conn) *WSConn {
 	// Extract file descriptor associated with the connection
 	fd := socketFD(conn)
 
@@ -93,14 +93,14 @@ func (my *Poll) add(conn net.Conn) *WSConn {
 	return playerConn
 }
 
-func (my *Poll) remove(item *WSConn) error {
+func (my *WSPoll) remove(item *WSConn) error {
 	my.connections.Remove(item.fd)
 	_ = item.Close()
 	var err = unix.EpollCtl(my.fd, syscall.EPOLL_CTL_DEL, int(item.fd), nil)
 	return err
 }
 
-func (my *Poll) pollData(fetus *pollFetus) {
+func (my *WSPoll) pollData(fetus *pollFetus) {
 retry:
 	var events = fetus.events
 	n, err := unix.EpollWait(my.fd, events, -1)

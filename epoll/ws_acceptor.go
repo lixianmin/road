@@ -12,12 +12,12 @@ author:     lixianmin
 Copyright (C) - All Rights Reserved
 *********************************************************************/
 
-type Acceptor struct {
-	poll     *Poll
+type WSAcceptor struct {
+	poll     *WSPoll
 	connChan chan PlayerConn
 }
 
-func NewAcceptor(opts ...AcceptorOption) *Acceptor {
+func NewWSAcceptor(opts ...AcceptorOption) *WSAcceptor {
 	var options = acceptorOptions{
 		ConnChanSize:     16,
 		ReceivedChanSize: 16,
@@ -28,7 +28,7 @@ func NewAcceptor(opts ...AcceptorOption) *Acceptor {
 		opt(&options)
 	}
 
-	var my = &Acceptor{
+	var my = &WSAcceptor{
 		poll:     newPoll(options.PollBufferSize, options.ReceivedChanSize),
 		connChan: make(chan PlayerConn, options.ConnChanSize),
 	}
@@ -36,7 +36,7 @@ func NewAcceptor(opts ...AcceptorOption) *Acceptor {
 	return my
 }
 
-func (my *Acceptor) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+func (my *WSAcceptor) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	// Upgrade connection
 	conn, _, _, err := ws.UpgradeHTTP(r, w)
 	if err != nil {
@@ -49,6 +49,6 @@ func (my *Acceptor) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-func (my *Acceptor) GetConnChan() chan PlayerConn {
+func (my *WSAcceptor) GetConnChan() chan PlayerConn {
 	return my.connChan
 }
