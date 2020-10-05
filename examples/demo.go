@@ -58,8 +58,12 @@ func main() {
 
 func listenTcp() {
 	var address = ":4444"
-	var accept = epoll.NewTcpAcceptor(address)
-	var app = road.NewApp(accept, road.WithSessionRateLimitBySecond(123456789))
+	var accept = epoll.NewTcpAcceptor(address, epoll.WithReceivedChanSize(1))
+	var app = road.NewApp(accept,
+		road.WithSessionRateLimitBySecond(123456789),
+		road.WithHeartbeatTimeout(2*time.Second),
+		road.WithSessionSendingChanSize(1))
+
 	var room = &Room{}
 	_ = app.Register(room, component.WithName("room"), component.WithNameFunc(strings.ToLower))
 	//testHook(app)
@@ -72,7 +76,7 @@ func listenTcp() {
 	go func() {
 		time.Sleep(1 * time.Second)
 
-		for i := 0; i < 200; i++ {
+		for i := 0; i < 1000; i++ {
 			var item = Enter{Name: "panda", ID: i, Text: text}
 			var data = convert.ToJson(item)
 			_, err := pClient.SendRequest("room.enter", data)

@@ -21,7 +21,16 @@ func (my *Session) Push(route string, v interface{}) error {
 
 	var payload, err = util.SerializeOrRaw(my.app.serializer, v)
 	var msg = message.Message{Type: message.Push, Route: route, Data: payload}
-	return my.sendMessageMayError(msg, err)
+	var data, err1 = my.encodeMessageMayError(msg, err)
+	if err1 != nil {
+		return err1
+	}
+
+	select {
+	case my.sendingChan <- data:
+	case <-my.wc.C():
+	}
+	return nil
 }
 
 // 强踢下线
@@ -35,11 +44,14 @@ func (my *Session) Kick() error {
 		return err
 	}
 
-	my.sendBytes(p)
+	select {
+	case my.sendingChan <- p:
+	case <-my.wc.C():
+	}
 	return nil
 }
 
-func (my *Session) sendMessageMayError(msg message.Message, err error) error {
+func (my *Session) encodeMessageMayError(msg message.Message, err error) ([]byte, error) {
 	if err != nil {
 		msg.Err = true
 		logger.Info("process failed, route=%s, err=%q", msg.Route, err.Error())
@@ -51,29 +63,26 @@ func (my *Session) sendMessageMayError(msg message.Message, err error) error {
 		msg.Data, err1 = util.SerializeOrRaw(my.app.serializer, errWrap)
 		if err1 != nil {
 			logger.Info("serialize failed, route=%s, err1=%q", msg.Route, err1.Error())
-			return err1
+			return nil, err1
 		}
 	}
 
 	data, err2 := my.packetEncodeMessage(&msg)
 	if err2 != nil {
 		logger.Info("send failed, route=%s, err2=%q", msg.Route, err2.Error())
-		return err2
+		return nil, err2
 	}
 
-	my.sendBytes(data)
-	return nil
+	return data, nil
 }
 
-func (my *Session) sendBytes(data []byte) {
-	if len(data) == 0 {
-		return
+func (my *Session) writeBytes(data []byte) error {
+	if len(data) > 0 {
+		var _, err = my.conn.Write(data)
+		return err
 	}
 
-	select {
-	case my.sendingChan <- data:
-	case <-my.wc.C():
-	}
+	return nil
 }
 
 func (my *Session) packetEncodeMessage(msg *message.Message) ([]byte, error) {

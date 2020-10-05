@@ -58,7 +58,7 @@ func (my *Session) goLoop(later loom.Later) {
 				return
 			}
 		case data := <-my.sendingChan:
-			if _, err := my.conn.Write(data); err != nil {
+			if err := my.writeBytes(data); err != nil {
 				logger.Info("Failed to write in conn: %s", err.Error())
 				return
 			}
@@ -115,7 +115,9 @@ func (my *Session) onReceivedMessage(fetus *sessionFetus, msg epoll.Message) err
 		var p = packets[i]
 		switch p.Type {
 		case packet.Handshake:
-			my.onReceivedHandshake(fetus, p)
+			if err := my.onReceivedHandshake(fetus, p); err != nil {
+				return err
+			}
 		case packet.HandshakeAck:
 			// handshake的流程是 client (request) --> server (response) --> client (ack) --> server (received ack)
 			logger.Debug("Receive handshake ACK")
@@ -132,10 +134,14 @@ func (my *Session) onReceivedMessage(fetus *sessionFetus, msg epoll.Message) err
 }
 
 // 如果长时间收不到握手消息，服务器会主动断开链接
-func (my *Session) onReceivedHandshake(fetus *sessionFetus, p *packet.Packet) {
+func (my *Session) onReceivedHandshake(fetus *sessionFetus, p *packet.Packet) error {
 	fetus.isHandshakeReceived = true
-	my.sendBytes(my.app.handshakeResponseData)
-	my.onHandShaken.Invoke()
+	var err = my.writeBytes(my.app.handshakeResponseData)
+	if err != nil {
+		my.onHandShaken.Invoke()
+	}
+
+	return err
 }
 
 func (my *Session) onReceivedData(fetus *sessionFetus, p *packet.Packet) error {
@@ -151,13 +157,22 @@ func (my *Session) onReceivedData(fetus *sessionFetus, p *packet.Packet) error {
 		if needReply {
 			var payload, err = my.app.serializer.Marshal("rate limit triggered, ignore processing")
 			var msg = message.Message{Type: message.Response, ID: item.msg.ID, Data: payload}
-			_ = my.sendMessageMayError(msg, err)
+			var data, err1 = my.encodeMessageMayError(msg, err)
+			if err1 != nil {
+				return err1
+			}
+
+			var err2 = my.writeBytes(data)
+			if err2 != nil {
+				return err2
+			}
 		}
 
 		// 如果单位时间内消耗令牌太多，则直接断开网络
 		if fetus.rateLimitTokens <= -fetus.rateLimitWindow {
 			return ErrKickedByRateLimit
 		}
+
 		return nil
 	}
 
@@ -170,7 +185,12 @@ func (my *Session) onReceivedData(fetus *sessionFetus, p *packet.Packet) error {
 	payload, err := processReceivedData(item, handler, my.app.serializer, my.app.hookCallback)
 	if needReply {
 		var msg = message.Message{Type: message.Response, ID: item.msg.ID, Data: payload}
-		_ = my.sendMessageMayError(msg, err)
+		var data, err1 = my.encodeMessageMayError(msg, err)
+		if err1 != nil {
+			return err1
+		}
+
+		return my.writeBytes(data)
 	}
 
 	return nil
