@@ -72,7 +72,7 @@ func (my *TcpPoll) Close() error {
 	})
 }
 
-func (my *TcpPoll) add(conn net.Conn) *WsConn {
+func (my *TcpPoll) add(conn net.Conn) *tcpConn {
 	// Extract file descriptor associated with the connection
 	fd := socketFD(conn)
 
@@ -81,7 +81,7 @@ func (my *TcpPoll) add(conn net.Conn) *WsConn {
 		return nil
 	}
 
-	var playerConn = &WsConn{
+	var playerConn = &tcpConn{
 		fd:           fd,
 		conn:         conn,
 		receivedChan: make(chan Message, my.receivedChanSize),
