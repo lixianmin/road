@@ -13,9 +13,10 @@ author:     lixianmin
 Copyright (C) - All Rights Reserved
 *********************************************************************/
 type TcpAcceptor struct {
+	address  string
 	poll     *TcpPoll
 	connChan chan PlayerConn
-	wc       loom.WaitClose
+	isClosed int32
 }
 
 func NewTcpAcceptor(address string, opts ...AcceptorOption) *TcpAcceptor {
@@ -30,20 +31,18 @@ func NewTcpAcceptor(address string, opts ...AcceptorOption) *TcpAcceptor {
 	}
 
 	var my = &TcpAcceptor{
+		address:  address,
 		poll:     newTcpPoll(options.PollBufferSize, options.ReceivedChanSize),
 		connChan: make(chan PlayerConn, options.ConnChanSize),
 	}
 
-	loom.Go(func(later loom.Later) {
-		my.goLoop(later, address)
-	})
-
+	loom.Go(my.goLoop)
 	return my
 }
 
 // ListenAndServe using tcp acceptor
-func (my *TcpAcceptor) goLoop(later loom.Later, address string) {
-	listener, err := net.Listen("tcp", address)
+func (my *TcpAcceptor) goLoop(later loom.Later) {
+	listener, err := net.Listen("tcp", my.address)
 	if err != nil {
 		logger.Warn("Failed to listen: %s", err)
 		return
@@ -53,7 +52,7 @@ func (my *TcpAcceptor) goLoop(later loom.Later, address string) {
 		_ = listener.Close()
 	}()
 
-	for !my.wc.IsClosed() {
+	for !loom.LoadBool(&my.isClosed) {
 		conn, err := listener.Accept()
 		if err != nil {
 			logger.Info("Failed to accept TCP connection: %s", err)
@@ -68,7 +67,8 @@ func (my *TcpAcceptor) goLoop(later loom.Later, address string) {
 }
 
 func (my *TcpAcceptor) Close() error {
-	return my.wc.Close(nil)
+	loom.StoreBool(&my.isClosed, true)
+	return nil
 }
 
 func (my *TcpAcceptor) GetConnChan() chan PlayerConn {
