@@ -38,6 +38,18 @@ func (my *tcpConn) GetReceivedChan() <-chan Message {
 
 // GetNextMessage reads the next message available in the stream
 func (my *tcpConn) GetNextMessage() (b []byte, err error) {
+	defer func() {
+		e := recover()
+		if e == nil {
+			return
+		}
+		if panicErr, ok := e.(error); ok && panicErr == bytes.ErrTooLarge {
+			err = panicErr
+		} else {
+			panic(e)
+		}
+	}()
+
 	var buff bytes.Buffer
 	_, err = buff.ReadFrom(io.LimitReader(my.conn, codec.HeadLength))
 	if err != nil {

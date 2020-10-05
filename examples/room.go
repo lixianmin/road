@@ -10,13 +10,14 @@ Copyright (C) - All Rights Reserved
 *********************************************************************/
 
 type Enter struct {
-	ID   int
-	Name string
+	ID   int	`json:"id"`
+	Name string	`json:"name"`
+	Text string	`json:"text"`
 }
 
 type EnterRe struct {
-	RID  int
-	Name string
+	ID   int    `json:"id"`
+	Name string `json:"name"`
 }
 
 type Room struct {
@@ -24,7 +25,7 @@ type Room struct {
 
 func (room *Room) Enter(ctx context.Context, request *Enter) (*EnterRe, error) {
 	return &EnterRe{
-		RID:  request.ID,
+		ID:   request.ID,
 		Name: request.Name,
 	}, nil
 }

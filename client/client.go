@@ -25,7 +25,6 @@ import (
 	"context"
 	"crypto/tls"
 	"encoding/json"
-	"errors"
 	"fmt"
 	"github.com/gobwas/ws"
 	"github.com/lixianmin/road/conn/codec"
@@ -203,15 +202,15 @@ func (c *Client) pendingRequestsReaper() {
 					toDelete = append(toDelete, v)
 				}
 			}
+
+			var errData = `{"code":"RequestTimeout", "message":"ignore process due to timeout"}`
 			for _, pendingReq := range toDelete {
-				err := errors.New("request timeout")
-				errMarshalled, _ := json.Marshal(err)
 				// send a timeout to incoming msg chan
 				m := &message.Message{
 					Type:  message.Response,
 					ID:    pendingReq.msg.ID,
 					Route: pendingReq.msg.Route,
-					Data:  errMarshalled,
+					Data:  []byte(errData),
 					Err:   true,
 				}
 				delete(c.pendingRequests, pendingReq.msg.ID)
