@@ -106,7 +106,11 @@ retry:
 
 	for i := 0; i < n; i++ {
 		var fd = int64(events[i].Fd)
-		var item = my.connections.Get1(fd).(*TcpConn)
+		var item, ok = my.connections.Get1(fd).(*TcpConn)
+		if !ok {
+			continue
+		}
+
 		if (events[i].Events & unix.POLLHUP) == unix.POLLHUP {
 			_ = my.remove(item)
 			continue

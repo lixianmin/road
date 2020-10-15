@@ -168,7 +168,10 @@ retry:
 
 	for i := 0; i < num; i++ {
 		var ident = int64(fetus.events[i].Ident)
-		var item = my.connections.Get1(ident).(*TcpConn)
+		var item, ok = my.connections.Get1(ident).(*TcpConn)
+		if !ok {
+			continue
+		}
 
 		// EOF
 		if (fetus.events[i].Flags & syscall.EV_EOF) == syscall.EV_EOF {
