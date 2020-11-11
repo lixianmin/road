@@ -188,10 +188,11 @@ func (c *Client) handleHandshakeResponse() error {
 	return nil
 }
 
-// pendingRequestsReaper delete timedout requests
+// pendingRequestsReaper delete expired requests
 func (c *Client) pendingRequestsReaper() {
 	ticker := time.NewTicker(1 * time.Second)
 	defer ticker.Stop()
+
 	for {
 		select {
 		case <-ticker.C:
