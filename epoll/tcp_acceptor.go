@@ -4,6 +4,7 @@ import (
 	"github.com/lixianmin/got/loom"
 	"github.com/lixianmin/road/logger"
 	"net"
+	"sync/atomic"
 )
 
 /********************************************************************
@@ -52,7 +53,7 @@ func (my *TcpAcceptor) goLoop(later loom.Later) {
 		_ = listener.Close()
 	}()
 
-	for !loom.LoadBool(&my.isClosed) {
+	for atomic.LoadInt32(&my.isClosed) == 0 {
 		conn, err := listener.Accept()
 		if err != nil {
 			logger.Info("Failed to accept TCP connection: %s", err)
@@ -67,7 +68,7 @@ func (my *TcpAcceptor) goLoop(later loom.Later) {
 }
 
 func (my *TcpAcceptor) Close() error {
-	loom.StoreBool(&my.isClosed, true)
+	atomic.StoreInt32(&my.isClosed, 1)
 	return nil
 }
 

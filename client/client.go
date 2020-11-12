@@ -104,6 +104,7 @@ func New(requestTimeout ...time.Duration) *Client {
 		// 30 here is the limit of inflight messages
 		// TODO this should probably be configurable
 		pendingChan:    make(chan bool, 30),
+		closeChan:      make(chan struct{}),
 		messageEncoder: message.NewMessagesEncoder(false),
 		clientHandshakeData: &session.HandshakeData{
 			Sys: session.HandshakeClientData{
@@ -351,7 +352,7 @@ func (c *Client) ConnectTo(addr string, tlsConfig ...*tls.Config) error {
 		return err
 	}
 
-	c.closeChan = make(chan struct{})
+	//c.closeChan = make(chan struct{})
 
 	return nil
 }

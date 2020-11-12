@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"github.com/lixianmin/got/loom"
 	"github.com/lixianmin/got/mathx"
-	"github.com/lixianmin/got/timex"
 	"github.com/lixianmin/road/component"
 	"github.com/lixianmin/road/conn/message"
 	"github.com/lixianmin/road/conn/packet"
@@ -39,7 +38,7 @@ func (my *Session) goLoop(later loom.Later) {
 	var stepRateLimitTokens = heartbeatSeconds * app.rateLimitBySecond
 
 	var fetus = &sessionFetus{
-		lastAt:          timex.NowUnix(),
+		lastAt:          time.Now().Unix(),
 		deltaDeadline:   int64(3 * app.heartbeatTimeout / time.Second),
 		rateLimitTokens: stepRateLimitTokens,
 		rateLimitWindow: 2 * stepRateLimitTokens,
@@ -63,7 +62,7 @@ func (my *Session) goLoop(later loom.Later) {
 				return
 			}
 		case msg := <-receivedChan:
-			fetus.lastAt = timex.NowUnix()
+			fetus.lastAt = time.Now().Unix()
 			fetus.rateLimitTokens--
 			if err := my.onReceivedMessage(fetus, msg); err != nil {
 				logger.Info(err.Error())
@@ -84,7 +83,7 @@ func (my *Session) onHeartbeat(fetus *sessionFetus) error {
 		return errors.New("don't received handshake, disconnect")
 	}
 
-	deadline := timex.NowUnix() - fetus.deltaDeadline
+	deadline := time.Now().Unix() - fetus.deltaDeadline
 	if fetus.lastAt < deadline {
 		return fmt.Errorf("session heartbeat timeout, lastAt=%d, deadline=%d", fetus.lastAt, deadline)
 	}
@@ -145,7 +144,7 @@ func (my *Session) onReceivedHandshake(fetus *sessionFetus, p *packet.Packet) er
 }
 
 func (my *Session) onReceivedData(fetus *sessionFetus, p *packet.Packet) error {
-	item, err := my.decodeReceivedData(p);
+	item, err := my.decodeReceivedData(p)
 	if err != nil {
 		var err1 = fmt.Errorf("failed to process packet: %s", err.Error())
 		return err1
