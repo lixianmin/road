@@ -94,10 +94,7 @@ func NewApp(accept epoll.Acceptor, opts ...AppOption) *App {
 
 	app.heartbeatPacketData = app.encodeHeartbeatData()
 	app.handshakeResponseData = app.encodeHandshakeData(options.DataCompression)
-	app.tasks = loom.NewTaskQueue(loom.TaskQueueArgs{
-		Size:      options.SessionTaskQueueSize,
-		CloseChan: app.wc.C(),
-	})
+	app.tasks = loom.NewTaskQueue(loom.WithSize(options.SessionTaskQueueSize), loom.WithCloseChan(app.wc.C()))
 
 	loom.Go(app.goLoop)
 	return app

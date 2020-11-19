@@ -60,11 +60,7 @@ func NewSession(app *App, conn epoll.PlayerConn) *Session {
 		sendingChan: make(chan []byte, app.sendingChanSize),
 	}
 
-	session.tasks = loom.NewTaskQueue(loom.TaskQueueArgs{
-		Size:      app.taskQueueSize,
-		CloseChan: session.wc.C(),
-	})
-
+	session.tasks = loom.NewTaskQueue(loom.WithSize(app.taskQueueSize), loom.WithCloseChan(session.wc.C()))
 	loom.Go(session.goLoop)
 	return session
 }
