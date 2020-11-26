@@ -46,6 +46,7 @@ func (my *Session) Kick() error {
 
 	select {
 	case my.sendingChan <- p:
+		logger.Info("session will be closed by Kick()")
 	case <-my.wc.C():
 	}
 	return nil

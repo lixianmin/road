@@ -27,6 +27,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"github.com/gobwas/ws"
+	"github.com/lixianmin/got/loom"
 	"github.com/lixianmin/road/conn/codec"
 	"github.com/lixianmin/road/conn/message"
 	"github.com/lixianmin/road/conn/packet"
@@ -61,7 +62,7 @@ type pendingRequest struct {
 // Client struct
 type Client struct {
 	conn                net.Conn
-	Connected           bool
+	Connected           int32
 	packetEncoder       codec.PacketEncoder
 	packetDecoder       codec.PacketDecoder
 	packetChan          chan *packet.Packet
@@ -70,10 +71,10 @@ type Client struct {
 	pendingRequests     map[uint]*pendingRequest
 	pendingReqMutex     sync.Mutex
 	requestTimeout      time.Duration
-	closeChan           chan struct{}
 	nextID              uint32
 	messageEncoder      message.Encoder
 	clientHandshakeData *session.HandshakeData
+	wc                  loom.WaitClose
 }
 
 // MsgChannel return the incoming message channel
@@ -83,7 +84,7 @@ func (c *Client) MsgChannel() chan *message.Message {
 
 // ConnectedStatus return the connection status
 func (c *Client) ConnectedStatus() bool {
-	return c.Connected
+	return atomic.LoadInt32(&c.Connected) == 1
 }
 
 // New returns a new client
@@ -95,7 +96,7 @@ func New(requestTimeout ...time.Duration) *Client {
 	}
 
 	return &Client{
-		Connected:       false,
+		Connected:       0,
 		packetEncoder:   codec.NewPomeloPacketEncoder(),
 		packetDecoder:   codec.NewPomeloPacketDecoder(),
 		packetChan:      make(chan *packet.Packet, 10),
@@ -104,7 +105,6 @@ func New(requestTimeout ...time.Duration) *Client {
 		// 30 here is the limit of inflight messages
 		// TODO this should probably be configurable
 		pendingChan:    make(chan bool, 30),
-		closeChan:      make(chan struct{}),
 		messageEncoder: message.NewMessagesEncoder(false),
 		clientHandshakeData: &session.HandshakeData{
 			Sys: session.HandshakeClientData{
@@ -179,7 +179,7 @@ func (c *Client) handleHandshakeResponse() error {
 		return err
 	}
 
-	c.Connected = true
+	atomic.StoreInt32(&c.Connected, 1)
 
 	go c.sendHeartbeats(handshake.Sys.Heartbeat)
 	go c.handleServerMessages()
@@ -220,7 +220,7 @@ func (c *Client) pendingRequestsReaper() {
 				c.IncomingMsgChan <- m
 			}
 			c.pendingReqMutex.Unlock()
-		case <-c.closeChan:
+		case <-c.wc.C():
 			return
 		}
 	}
@@ -254,7 +254,7 @@ func (c *Client) handlePackets() {
 				logger.Info("got kick packet from the server! disconnecting...")
 				c.Disconnect()
 			}
-		case <-c.closeChan:
+		case <-c.wc.C():
 			return
 		}
 	}
@@ -289,9 +289,9 @@ func (c *Client) readPackets(buf *bytes.Buffer) ([]*packet.Packet, error) {
 func (c *Client) handleServerMessages() {
 	buf := bytes.NewBuffer(nil)
 	defer c.Disconnect()
-	for c.Connected {
+	for atomic.LoadInt32(&c.Connected) == 1 {
 		packets, err := c.readPackets(buf)
-		if err != nil && c.Connected {
+		if err != nil && atomic.LoadInt32(&c.Connected) == 1 {
 			logger.Info(err)
 			break
 		}
@@ -317,7 +317,7 @@ func (c *Client) sendHeartbeats(interval int) {
 				logger.Info("error sending heartbeat to server: %s", err.Error())
 				return
 			}
-		case <-c.closeChan:
+		case <-c.wc.C():
 			return
 		}
 	}
@@ -325,11 +325,13 @@ func (c *Client) sendHeartbeats(interval int) {
 
 // Disconnect disconnects the client
 func (c *Client) Disconnect() {
-	if c.Connected {
-		c.Connected = false
-		close(c.closeChan)
-		_ = c.conn.Close()
-	}
+	_ = c.wc.Close(func() error {
+		if atomic.LoadInt32(&c.Connected) == 1 {
+			atomic.StoreInt32(&c.Connected, 0)
+			_ = c.conn.Close()
+		}
+		return nil
+	})
 }
 
 // ConnectTo connects to the server at addr, for now the only supported protocol is tcp
@@ -378,8 +380,6 @@ func (c *Client) ConnectToWS(addr string, path string, tlsConfig ...*tls.Config)
 	if err = c.handleHandshake(); err != nil {
 		return err
 	}
-
-	c.closeChan = make(chan struct{})
 
 	return nil
 }

@@ -68,6 +68,14 @@ func listenTcp() {
 	_ = app.Register(room, component.WithName("room"), component.WithNameFunc(strings.ToLower))
 	//testHook(app)
 
+	app.OnHandShaken(func(session *road.Session) {
+		logger.Info("session.id=%d", session.Id())
+		go func() {
+			time.Sleep(5 * time.Second)
+			session.Kick()
+		}()
+	})
+
 	var pClient = client.New()
 	if err := pClient.ConnectTo(address); err != nil {
 		logger.Error(err.Error())

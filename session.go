@@ -5,6 +5,7 @@ import (
 	"github.com/lixianmin/got/loom"
 	"github.com/lixianmin/road/conn/message"
 	"github.com/lixianmin/road/epoll"
+	"github.com/lixianmin/road/logger"
 	"github.com/lixianmin/road/route"
 	"net"
 	"sync/atomic"
@@ -52,7 +53,7 @@ type (
 )
 
 func NewSession(app *App, conn epoll.PlayerConn) *Session {
-	var session = &Session{
+	var my = &Session{
 		app:         app,
 		id:          atomic.AddInt64(&globalIdGenerator, 1),
 		conn:        conn,
@@ -60,9 +61,10 @@ func NewSession(app *App, conn epoll.PlayerConn) *Session {
 		sendingChan: make(chan []byte, app.sendingChanSize),
 	}
 
-	session.tasks = loom.NewTaskQueue(loom.WithSize(app.taskQueueSize), loom.WithCloseChan(session.wc.C()))
-	loom.Go(session.goLoop)
-	return session
+	my.tasks = loom.NewTaskQueue(loom.WithSize(app.taskQueueSize), loom.WithCloseChan(my.wc.C()))
+	logger.Info("create session(%d)", my.id)
+	loom.Go(my.goSessionLoop)
+	return my
 }
 
 // Close()方法可以被多次调用，只触发一次OnClosed事件

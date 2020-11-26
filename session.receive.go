@@ -26,7 +26,7 @@ author:     lixianmin
 Copyright (C) - All Rights Reserved
 *********************************************************************/
 
-func (my *Session) goLoop(later loom.Later) {
+func (my *Session) goSessionLoop(later loom.Later) {
 	defer my.Close()
 
 	var receivedChan = my.conn.GetReceivedChan()
@@ -53,24 +53,25 @@ func (my *Session) goLoop(later loom.Later) {
 			fetus.rateLimitTokens = mathx.MinInt32(fetus.rateLimitWindow, fetus.rateLimitTokens+stepRateLimitTokens)
 
 			if err := my.onHeartbeat(fetus); err != nil {
-				logger.Info(err.Error())
+				logger.Info("close session(%d) by onHeartbeat() err=%q", my.id, err)
 				return
 			}
 		case data := <-my.sendingChan:
 			if err := my.writeBytes(data); err != nil {
-				logger.Info("Failed to write in conn: %s", err.Error())
+				logger.Info("close session(%d) by  writeBytes() err=%q", my.id, err)
 				return
 			}
 		case msg := <-receivedChan:
 			fetus.lastAt = time.Now().Unix()
 			fetus.rateLimitTokens--
 			if err := my.onReceivedMessage(fetus, msg); err != nil {
-				logger.Info(err.Error())
+				logger.Info("close session(%d) by onReceivedMessage() err=%q", my.id, err)
 				return
 			}
 		case task := <-my.tasks.C:
 			_ = task.Do(my)
 		case <-closeChan:
+			logger.Info("close session(%d) by calling session.Close()", my.id)
 			return
 		}
 	}
