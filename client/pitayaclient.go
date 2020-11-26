@@ -30,7 +30,7 @@ import (
 type PitayaClient interface {
 	ConnectTo(addr string, tlsConfig ...*tls.Config) error
 	ConnectToWS(addr string, path string, tlsConfig ...*tls.Config) error
-	ConnectedStatus() bool
+	IsConnected() bool
 	Disconnect()
 	MsgChannel() chan *message.Message
 	SendNotify(route string, data []byte) error

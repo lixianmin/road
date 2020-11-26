@@ -62,7 +62,7 @@ type pendingRequest struct {
 // Client struct
 type Client struct {
 	conn                net.Conn
-	Connected           int32
+	isConnected         int32
 	packetEncoder       codec.PacketEncoder
 	packetDecoder       codec.PacketDecoder
 	packetChan          chan *packet.Packet
@@ -82,9 +82,9 @@ func (c *Client) MsgChannel() chan *message.Message {
 	return c.IncomingMsgChan
 }
 
-// ConnectedStatus return the connection status
-func (c *Client) ConnectedStatus() bool {
-	return atomic.LoadInt32(&c.Connected) == 1
+// IsConnected return the connection status
+func (c *Client) IsConnected() bool {
+	return atomic.LoadInt32(&c.isConnected) == 1
 }
 
 // New returns a new client
@@ -96,7 +96,7 @@ func New(requestTimeout ...time.Duration) *Client {
 	}
 
 	return &Client{
-		Connected:       0,
+		isConnected:     0,
 		packetEncoder:   codec.NewPomeloPacketEncoder(),
 		packetDecoder:   codec.NewPomeloPacketDecoder(),
 		packetChan:      make(chan *packet.Packet, 10),
@@ -179,7 +179,7 @@ func (c *Client) handleHandshakeResponse() error {
 		return err
 	}
 
-	atomic.StoreInt32(&c.Connected, 1)
+	atomic.StoreInt32(&c.isConnected, 1)
 
 	go c.sendHeartbeats(handshake.Sys.Heartbeat)
 	go c.handleServerMessages()
@@ -289,9 +289,9 @@ func (c *Client) readPackets(buf *bytes.Buffer) ([]*packet.Packet, error) {
 func (c *Client) handleServerMessages() {
 	buf := bytes.NewBuffer(nil)
 	defer c.Disconnect()
-	for atomic.LoadInt32(&c.Connected) == 1 {
+	for c.IsConnected() {
 		packets, err := c.readPackets(buf)
-		if err != nil && atomic.LoadInt32(&c.Connected) == 1 {
+		if err != nil && c.IsConnected() {
 			logger.Info(err)
 			break
 		}
@@ -326,8 +326,8 @@ func (c *Client) sendHeartbeats(interval int) {
 // Disconnect disconnects the client
 func (c *Client) Disconnect() {
 	_ = c.wc.Close(func() error {
-		if atomic.LoadInt32(&c.Connected) == 1 {
-			atomic.StoreInt32(&c.Connected, 0)
+		if c.IsConnected() {
+			atomic.StoreInt32(&c.isConnected, 0)
 			_ = c.conn.Close()
 		}
 		return nil
