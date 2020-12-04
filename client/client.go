@@ -143,7 +143,7 @@ func (c *Client) sendHandshakeRequest() error {
 func (c *Client) handleHandshakeResponse() error {
 	buf := bytes.NewBuffer(nil)
 	packets, err := c.readPackets(buf)
-	if err != nil {
+	if err != nil || len(packets) == 0 {
 		return err
 	}
 

@@ -8,5 +8,6 @@ require (
 	github.com/gobwas/ws v1.0.3
 	github.com/lixianmin/got v0.0.0-20201201055548-6c63abe5e7e1
 	github.com/lixianmin/logo v0.0.0-20201201055902-5ff8e6c0f178
-	golang.org/x/sys v0.0.0-20200905004654-be1d3432aa8f
+	github.com/panjf2000/gnet v1.3.2
+	golang.org/x/sys v0.0.0-20201116194326-cc9327a14d48
 )

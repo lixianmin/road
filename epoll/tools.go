@@ -23,7 +23,7 @@ func socketFD(conn net.Conn) int64 {
 	return pfdVal.FieldByName("Sysfd").Int()
 }
 
-func checkReceivedMsgBytes(msgBytes []byte) (error) {
+func checkReceivedMsgBytes(msgBytes []byte) error {
 	if len(msgBytes) < codec.HeadLength {
 		return packet.ErrInvalidPomeloHeader
 	}
