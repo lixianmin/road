@@ -92,12 +92,8 @@ func (my *EventAcceptor) PreWrite() {
 // Parameter:out is the return value which is going to be sent back to the client.
 func (my *EventAcceptor) React(frame []byte, c gnet.Conn) (out []byte, action gnet.Action) {
 	if conn, ok := c.Context().(*EventConn); ok {
-		if err := checkReceivedMsgBytes(frame); err == nil {
-			conn.receivedChan <- Message{Data: frame}
-		} else {
-			conn.receivedChan <- Message{Err: err}
-			_ = c.Close()
-		}
+		// 这里的frame都是经过decode解码的，所以一定符合packet结构要求
+		conn.receivedChan <- Message{Data: frame}
 	}
 
 	return
