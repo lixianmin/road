@@ -43,7 +43,9 @@ func (my *EventConn) Write(b []byte) (int, error) {
 // Close closes the connection.
 // Any blocked Read or Write operations will be unblocked and return errors.
 func (my *EventConn) Close() error {
-	return my.conn.Close()
+	// my.conn已经关闭了，就不需要重新关闭了
+	//return my.conn.Close()
+	return nil
 }
 
 // LocalAddr returns the local address.

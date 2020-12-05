@@ -43,7 +43,8 @@ func (my *EventAcceptor) goServe(address string) {
 	var protoAddress = "tcp://" + address
 	var err = gnet.Serve(my, protoAddress,
 		gnet.WithMulticore(true),
-		gnet.WithCodec(newEventCodec()))
+		gnet.WithCodec(newEventCodec()),
+		gnet.WithLogger(newEventLogger()))
 
 	if err != nil {
 		logger.Warn(err)

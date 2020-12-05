@@ -1,8 +1,6 @@
 package epoll
 
 import (
-	"encoding/binary"
-	"errors"
 	"github.com/lixianmin/road/ifs"
 	"github.com/panjf2000/gnet"
 )
@@ -20,23 +18,6 @@ type EventCodec struct {
 func newEventCodec() *EventCodec {
 	var my = &EventCodec{}
 	return my
-}
-
-type innerBuffer []byte
-
-func (in *innerBuffer) readN(n int) (buf []byte, err error) {
-	if n == 0 {
-		return nil, nil
-	}
-
-	if n < 0 {
-		return nil, errors.New("negative length is invalid")
-	} else if n > len(*in) {
-		return nil, errors.New("exceeding buffer length")
-	}
-	buf = (*in)[:n]
-	*in = (*in)[n:]
-	return
 }
 
 func (my *EventCodec) Encode(c gnet.Conn, buf []byte) ([]byte, error) {
@@ -79,18 +60,16 @@ func (my *EventCodec) Decode(c gnet.Conn) ([]byte, error) {
 	return fullMessage, nil
 }
 
-func (cc *EventCodec) getUnadjustedFrameLength(in *innerBuffer) ([]byte, uint64, error) {
-	lenBuf, err := in.readN(3)
+func (my *EventCodec) getUnadjustedFrameLength(in *innerBuffer) ([]byte, uint64, error) {
+	const lengthFieldSize = 3
+	lenBuf, err := in.readN(lengthFieldSize)
 	if err != nil {
 		return nil, 0, ifs.ErrUnexpectedEOF
 	}
-	return lenBuf, readUint24(binary.BigEndian, lenBuf), nil
+
+	return lenBuf, readUint24BigEndian(lenBuf), nil
 }
 
-func readUint24(byteOrder binary.ByteOrder, b []byte) uint64 {
-	_ = b[2]
-	if byteOrder == binary.LittleEndian {
-		return uint64(b[0]) | uint64(b[1])<<8 | uint64(b[2])<<16
-	}
+func readUint24BigEndian(b []byte) uint64 {
 	return uint64(b[2]) | uint64(b[1])<<8 | uint64(b[0])<<16
 }
