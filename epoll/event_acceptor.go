@@ -1,7 +1,6 @@
 package epoll
 
 import (
-	"encoding/binary"
 	"github.com/lixianmin/road/logger"
 	"github.com/panjf2000/gnet"
 	"sync/atomic"
@@ -40,31 +39,11 @@ func NewEventAcceptor(address string, opts ...AcceptorOption) *EventAcceptor {
 	return my
 }
 
-func createPomeloCodec() gnet.ICodec {
-	encoderConfig := gnet.EncoderConfig{
-		ByteOrder:                       binary.BigEndian,
-		LengthFieldLength:               3,
-		LengthAdjustment:                0,
-		LengthIncludesLengthFieldLength: false,
-	}
-
-	decoderConfig := gnet.DecoderConfig{
-		ByteOrder:           binary.BigEndian,
-		LengthFieldOffset:   1,
-		LengthFieldLength:   3,
-		LengthAdjustment:    0,
-		InitialBytesToStrip: 0,
-	}
-
-	var codec1 = gnet.NewLengthFieldBasedFrameCodec(encoderConfig, decoderConfig)
-	return codec1
-}
-
 func (my *EventAcceptor) goServe(address string) {
 	var protoAddress = "tcp://" + address
 	var err = gnet.Serve(my, protoAddress,
 		gnet.WithMulticore(true),
-		gnet.WithCodec(createPomeloCodec()))
+		gnet.WithCodec(newEventCodec()))
 
 	if err != nil {
 		logger.Warn(err)
@@ -98,13 +77,14 @@ func (my *EventAcceptor) OnOpened(c gnet.Conn) (out []byte, action gnet.Action) 
 // OnClosed fires when a connection has been closed.
 // The parameter:err is the last known connection error.
 func (my *EventAcceptor) OnClosed(c gnet.Conn, err error) (action gnet.Action) {
+	c.SetContext(nil)
 	return
 }
 
 // PreWrite fires just before any data is written to any client socket, this event function is usually used to
 // put some code of logging/counting/reporting or any prepositive operations before writing data to client.
 func (my *EventAcceptor) PreWrite() {
-	logger.Info("hello")
+
 }
 
 // React fires when a connection sends the server data.

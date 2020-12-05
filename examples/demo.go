@@ -58,7 +58,7 @@ func main() {
 
 func listenTcp() {
 	var address = ":4444"
-	var accept = epoll.NewTcpAcceptor(address, epoll.WithReceivedChanSize(1))
+	var accept = epoll.NewEventAcceptor(address, epoll.WithReceivedChanSize(1))
 	var app = road.NewApp(accept,
 		road.WithSessionRateLimitBySecond(123456789),
 		road.WithHeartbeatTimeout(2*time.Second),
