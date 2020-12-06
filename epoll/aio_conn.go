@@ -25,6 +25,7 @@ func newAioConn(conn net.Conn, watcher *gaio.Watcher, receivedChanSize int) *Aio
 	var receivedChan = make(chan Message, receivedChanSize)
 	var my = &AioConn{
 		conn:         conn,
+		watcher:      watcher,
 		receivedChan: receivedChan,
 	}
 

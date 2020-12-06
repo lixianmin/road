@@ -54,6 +54,8 @@ func main() {
 	logo.GetLogger().SetFilterLevel(logo.LevelDebug)
 	listenTcp()
 	//listenWebSocket()
+
+	select {}
 }
 
 func listenTcp() {
