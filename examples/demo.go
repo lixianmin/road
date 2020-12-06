@@ -114,13 +114,13 @@ func listenTcp() {
 }
 
 func listenWebSocket() {
-
 	const address = ":8888"
 	const path = "/ws"
 
 	var mux = http.NewServeMux()
 	var accept = epoll.NewWsAcceptor(mux, path)
-	var app = road.NewApp(accept)
+	var app = road.NewApp(accept,
+		road.WithSessionRateLimitBySecond(2))
 
 	var room = &Room{}
 	_ = app.Register(room, component.WithName("room"), component.WithNameFunc(strings.ToLower))
@@ -153,7 +153,7 @@ func listenWebSocket() {
 						} else {
 							var item Enter
 							convert.FromJson(msg.Data, &item)
-							logger.Info("id=%d, name=%s", item.ID, item.Name)
+							logger.Info("id=%d, name=%s, data=%s", item.ID, item.Name, string(msg.Data))
 						}
 					}
 					break
