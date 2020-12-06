@@ -72,7 +72,7 @@ func listenTcp() {
 		logger.Info("session.id=%d", session.Id())
 		go func() {
 			time.Sleep(5 * time.Second)
-			session.Kick()
+			_ = session.Kick()
 		}()
 	})
 
@@ -84,7 +84,7 @@ func listenTcp() {
 	go func() {
 		time.Sleep(1 * time.Second)
 
-		for i := 0; i < 1000; i++ {
+		for i := 0; i < 10; i++ {
 			var item = Enter{Name: "panda", ID: i, Text: text}
 			var data = convert.ToJson(item)
 			_, err := pClient.SendRequest("room.enter", data)
@@ -114,15 +114,55 @@ func listenTcp() {
 }
 
 func listenWebSocket() {
+
+	const address = ":8888"
+	const path = "/ws"
+
 	var mux = http.NewServeMux()
-	var accept = epoll.NewWsAcceptor(mux, "/")
+	var accept = epoll.NewWsAcceptor(mux, path)
 	var app = road.NewApp(accept)
 
 	var room = &Room{}
 	_ = app.Register(room, component.WithName("room"), component.WithNameFunc(strings.ToLower))
-	testHook(app)
+	//testHook(app)
 
-	var err = http.ListenAndServe(":8888", mux)
+	go func() {
+		var pClient = client.New()
+		if err := pClient.ConnectToWS(address, path); err != nil {
+			logger.Error(err.Error())
+		}
+
+		go func() {
+			time.Sleep(1 * time.Second)
+
+			for i := 10000; i < 10010; i++ {
+				var item = Enter{Name: "kitty", ID: i, Text: text}
+				var data = convert.ToJson(item)
+				_, err := pClient.SendRequest("room.enter", data)
+				if err != nil {
+					logger.Error(err.Error())
+				}
+			}
+
+			for {
+				select {
+				case msg := <-pClient.MsgChannel():
+					if msg != nil {
+						if msg.Err {
+							logger.Warn(string(msg.Data))
+						} else {
+							var item Enter
+							convert.FromJson(msg.Data, &item)
+							logger.Info("id=%d, name=%s", item.ID, item.Name)
+						}
+					}
+					break
+				}
+			}
+		}()
+	}()
+
+	var err = http.ListenAndServe(address, mux)
 	println(err)
 }
 
