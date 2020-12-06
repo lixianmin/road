@@ -40,10 +40,8 @@ func (my *EventConn) Write(b []byte) (int, error) {
 	return len(b), my.conn.AsyncWrite(b)
 }
 
-// Close closes the connection.
-// Any blocked Read or Write operations will be unblocked and return errors.
+// 这Close()会在session关闭的时间调用过来，此时my.conn如果已经关闭了，就不应该重新关闭
 func (my *EventConn) Close() error {
-	// my.conn已经关闭了，就不需要重新关闭了
 	//return my.conn.Close()
 	return nil
 }
