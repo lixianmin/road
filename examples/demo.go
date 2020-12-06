@@ -53,12 +53,12 @@ author:     lixianmin
 func main() {
 	logo.GetLogger().SetFilterLevel(logo.LevelDebug)
 	listenTcp()
-	listenWebSocket()
+	//listenWebSocket()
 }
 
 func listenTcp() {
 	var address = ":4444"
-	var accept = epoll.NewEventAcceptor(address, epoll.WithReceivedChanSize(1))
+	var accept = epoll.NewAioAcceptor(address, epoll.WithReceivedChanSize(1))
 	var app = road.NewApp(accept,
 		road.WithSessionRateLimitBySecond(123456789),
 		road.WithHeartbeatTimeout(2*time.Second),
