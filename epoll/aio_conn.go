@@ -27,7 +27,7 @@ func newAioConn(conn net.Conn, watcher *gaio.Watcher, receivedChanSize int) *Aio
 		conn:         conn,
 		watcher:      watcher,
 		receivedChan: receivedChan,
-		input:        gBufferPool.Get(),
+		input:        &core.Buffer{},
 	}
 
 	return my

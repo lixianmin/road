@@ -24,8 +24,8 @@ func NewWebReaderWriter(conn net.Conn, watcher *gaio.Watcher) *WebReaderWriter {
 	var my = &WebReaderWriter{
 		conn:    conn,
 		watcher: watcher,
-		input:   gBufferPool.Get(),
-		backup:  gBufferPool.Get(),
+		input:   &core.Buffer{},
+		backup:  &core.Buffer{},
 	}
 
 	return my
