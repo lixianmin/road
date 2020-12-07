@@ -86,7 +86,7 @@ func listenTcp() {
 	go func() {
 		time.Sleep(1 * time.Second)
 
-		for i := 0; i < 10; i++ {
+		for i := 0; i < 1000; i++ {
 			var item = Enter{Name: "panda", ID: i, Text: text}
 			var data = convert.ToJson(item)
 			_, err := pClient.SendRequest("room.enter", data)

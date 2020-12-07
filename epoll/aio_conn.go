@@ -37,7 +37,7 @@ func (my *AioConn) GetReceivedChan() <-chan Message {
 }
 
 func (my *AioConn) onReceiveData(buff []byte) error {
-	var inboundBuffer = my.inboundBuffer
+	var inboundBuffer = &my.inboundBuffer
 	var _, err = inboundBuffer.Write(buff)
 	if err != nil {
 		return err
