@@ -36,7 +36,6 @@ import (
 	"github.com/lixianmin/road/util/compression"
 	"net"
 	"net/url"
-	"sync"
 	"sync/atomic"
 	"time"
 )
@@ -67,9 +66,6 @@ type Client struct {
 	packetDecoder       codec.PacketDecoder
 	packetChan          chan *packet.Packet
 	IncomingMsgChan     chan *message.Message
-	pendingChan         chan bool
-	pendingRequests     map[uint]*pendingRequest
-	pendingReqMutex     sync.Mutex
 	requestTimeout      time.Duration
 	nextID              uint32
 	messageEncoder      message.Encoder
@@ -100,11 +96,7 @@ func New(requestTimeout ...time.Duration) *Client {
 		packetEncoder:   codec.NewPomeloPacketEncoder(),
 		packetDecoder:   codec.NewPomeloPacketDecoder(),
 		packetChan:      make(chan *packet.Packet, 10),
-		pendingRequests: make(map[uint]*pendingRequest),
 		requestTimeout:  reqTimeout,
-		// 30 here is the limit of inflight messages
-		// TODO this should probably be configurable
-		pendingChan:    make(chan bool, 30),
 		messageEncoder: message.NewMessagesEncoder(false),
 		clientHandshakeData: &session.HandshakeData{
 			Sys: session.HandshakeClientData{
@@ -184,46 +176,8 @@ func (c *Client) handleHandshakeResponse() error {
 	go c.sendHeartbeats(handshake.Sys.Heartbeat)
 	go c.handleServerMessages()
 	go c.handlePackets()
-	go c.pendingRequestsReaper()
 
 	return nil
-}
-
-// pendingRequestsReaper delete expired requests
-func (c *Client) pendingRequestsReaper() {
-	ticker := time.NewTicker(1 * time.Second)
-	defer ticker.Stop()
-
-	for {
-		select {
-		case <-ticker.C:
-			toDelete := make([]*pendingRequest, 0)
-			c.pendingReqMutex.Lock()
-			for _, v := range c.pendingRequests {
-				if time.Now().Sub(v.sentAt) > c.requestTimeout {
-					toDelete = append(toDelete, v)
-				}
-			}
-
-			var errData = `{"code":"RequestTimeout", "message":"ignore process due to timeout"}`
-			for _, pendingReq := range toDelete {
-				// send a timeout to incoming msg chan
-				m := &message.Message{
-					Type:  message.Response,
-					ID:    pendingReq.msg.ID,
-					Route: pendingReq.msg.Route,
-					Data:  []byte(errData),
-					Err:   true,
-				}
-				delete(c.pendingRequests, pendingReq.msg.ID)
-				<-c.pendingChan
-				c.IncomingMsgChan <- m
-			}
-			c.pendingReqMutex.Unlock()
-		case <-c.wc.C():
-			return
-		}
-	}
 }
 
 func (c *Client) handlePackets() {
@@ -232,22 +186,9 @@ func (c *Client) handlePackets() {
 		case p := <-c.packetChan:
 			switch p.Type {
 			case packet.Data:
-				//handle data
-				//logger.Debug("got data: %s", string(p.Data))
 				m, err := message.Decode(p.Data)
 				if err != nil {
 					logger.Info("error decoding msg from sv: %s", string(m.Data))
-				}
-				if m.Type == message.Response {
-					c.pendingReqMutex.Lock()
-					if _, ok := c.pendingRequests[m.ID]; ok {
-						delete(c.pendingRequests, m.ID)
-						<-c.pendingChan
-					} else {
-						c.pendingReqMutex.Unlock()
-						continue // do not process msg for already timedout request
-					}
-					c.pendingReqMutex.Unlock()
 				}
 				c.IncomingMsgChan <- m
 			case packet.Kick:
@@ -431,15 +372,7 @@ func (c *Client) sendMsg(msgType message.Type, route string, data []byte) (uint,
 	}
 	p, err := c.buildPacket(m)
 	if msgType == message.Request {
-		c.pendingChan <- true
-		c.pendingReqMutex.Lock()
-		if _, ok := c.pendingRequests[m.ID]; !ok {
-			c.pendingRequests[m.ID] = &pendingRequest{
-				msg:    &m,
-				sentAt: time.Now(),
-			}
-		}
-		c.pendingReqMutex.Unlock()
+
 	}
 
 	if err != nil {
