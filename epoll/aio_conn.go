@@ -67,17 +67,7 @@ func (my *AioConn) onReceiveData(buff []byte) error {
 		data = input.Bytes()
 	}
 
-	// 调整inboundBuffer的offset
-	if len(data) == 0 {
-		input.Reset()
-	} else {
-		my.input = gBufferPool.Get()
-		my.input.Write(data)
-
-		input.Reset()
-		gBufferPool.Put(input)
-	}
-
+	my.input = checkSwapBuffer(input)
 	return nil
 }
 

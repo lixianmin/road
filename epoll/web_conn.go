@@ -1,7 +1,6 @@
 package epoll
 
 import (
-	"bytes"
 	"github.com/gobwas/ws"
 	"github.com/gobwas/ws/wsutil"
 	"github.com/xtaci/gaio"
@@ -19,7 +18,6 @@ type WebConn struct {
 	conn         net.Conn
 	watcher      *gaio.Watcher
 	receivedChan chan Message
-	input        *bytes.Buffer
 	readerWriter *WebReaderWriter
 }
 
@@ -29,7 +27,6 @@ func newWebConn(conn net.Conn, watcher *gaio.Watcher, receivedChanSize int) *Web
 		conn:         conn,
 		watcher:      watcher,
 		receivedChan: receivedChan,
-		input:        gBufferPool.Get(),
 		readerWriter: NewWebReaderWriter(conn, watcher),
 	}
 
@@ -41,11 +38,7 @@ func (my *WebConn) GetReceivedChan() <-chan Message {
 }
 
 func (my *WebConn) onReceiveData(buff []byte) error {
-	var err = my.readerWriter.onReceiveData(buff)
-	if err != nil {
-		return err
-	}
-
+	my.readerWriter.onReceiveData(buff)
 	data, _, err := wsutil.ReadData(my.readerWriter, ws.StateServerSide)
 	if err != nil {
 		my.receivedChan <- Message{Err: err}

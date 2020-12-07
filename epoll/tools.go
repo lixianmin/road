@@ -1,6 +1,7 @@
 package epoll
 
 import (
+	"bytes"
 	"github.com/lixianmin/road/conn/codec"
 	"github.com/lixianmin/road/conn/packet"
 	"github.com/lixianmin/road/ifs"
@@ -42,4 +43,19 @@ func checkReceivedMsgBytes(msgBytes []byte) error {
 	}
 
 	return nil
+}
+
+func checkSwapBuffer(input *bytes.Buffer) *bytes.Buffer {
+	var data = input.Bytes()
+	if len(data) == 0 {
+		input.Reset()
+		return input
+	} else {
+		var swap = gBufferPool.Get()
+		swap.Write(data)
+
+		input.Reset()
+		gBufferPool.Put(input)
+		return swap
+	}
 }

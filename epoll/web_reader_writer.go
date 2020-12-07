@@ -29,25 +29,14 @@ func NewWebReaderWriter(conn net.Conn, watcher *gaio.Watcher) *WebReaderWriter {
 	return my
 }
 
-func (my *WebReaderWriter) onReceiveData(buff []byte) error {
-	var _, err = my.input.Write(buff)
-	return err
+// onReceiveData()与下面的Read()是在同一个线程中调用的，不存在并发问题
+func (my *WebReaderWriter) onReceiveData(buff []byte) {
+	_, _ = my.input.Write(buff)
 }
 
 func (my *WebReaderWriter) Read(p []byte) (n int, err error) {
-	var input = my.input
-	n, err = input.Read(p)
-
-	var remain = input.Bytes()
-	if len(remain) == 0 {
-		input.Reset()
-	} else {
-		my.input = gBufferPool.Get()
-		my.input.Write(remain)
-
-		input.Reset()
-		gBufferPool.Put(input)
-	}
+	n, err = my.input.Read(p)
+	my.input = checkSwapBuffer(my.input)
 
 	return n, err
 }
