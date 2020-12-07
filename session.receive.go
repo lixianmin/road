@@ -95,6 +95,7 @@ func (my *Session) onHeartbeat(fetus *sessionFetus) error {
 		return fmt.Errorf("failed to write in conn: %s", err.Error())
 	}
 
+	logger.Debug("sessionId=%d, sent heartbeat", my.id)
 	return nil
 }
 
@@ -121,13 +122,13 @@ func (my *Session) onReceivedMessage(fetus *sessionFetus, msg epoll.Message) err
 			}
 		case packet.HandshakeAck:
 			// handshake的流程是 client (request) --> server (response) --> client (ack) --> server (received ack)
-			logger.Debug("Receive handshake ACK")
+			logger.Debug("received handshake ACK")
 		case packet.Data:
 			if err := my.onReceivedData(fetus, p); err != nil {
 				return err
 			}
 		case packet.Heartbeat:
-			// expected
+			logger.Debug("sessionId=%d, received heartbeat", my.id)
 		}
 	}
 
