@@ -12,14 +12,14 @@ author:     lixianmin
 Copyright (C) - All Rights Reserved
 *********************************************************************/
 
-type WebReaderWriter struct {
+type WsReaderWriter struct {
 	conn    net.Conn
 	watcher *gaio.Watcher
 	input   *Buffer
 }
 
-func NewWebReaderWriter(conn net.Conn, watcher *gaio.Watcher) *WebReaderWriter {
-	var my = &WebReaderWriter{
+func NewWsReaderWriter(conn net.Conn, watcher *gaio.Watcher) *WsReaderWriter {
+	var my = &WsReaderWriter{
 		conn:    conn,
 		watcher: watcher,
 		input:   &Buffer{},
@@ -28,11 +28,11 @@ func NewWebReaderWriter(conn net.Conn, watcher *gaio.Watcher) *WebReaderWriter {
 	return my
 }
 
-func (my *WebReaderWriter) Read(p []byte) (n int, err error) {
+func (my *WsReaderWriter) Read(p []byte) (n int, err error) {
 	n, err = my.input.Read(p)
 	return n, err
 }
 
-func (my *WebReaderWriter) Write(p []byte) (n int, err error) {
+func (my *WsReaderWriter) Write(p []byte) (n int, err error) {
 	return len(p), my.watcher.Write(my, my.conn, p)
 }

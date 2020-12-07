@@ -4,8 +4,6 @@ import (
 	"github.com/lixianmin/road/conn/codec"
 	"github.com/lixianmin/road/conn/packet"
 	"github.com/lixianmin/road/ifs"
-	"net"
-	"reflect"
 )
 
 /********************************************************************
@@ -14,14 +12,6 @@ author:     lixianmin
 
 Copyright (C) - All Rights Reserved
 *********************************************************************/
-
-func socketFD(conn net.Conn) int64 {
-	tcpConn := reflect.Indirect(reflect.ValueOf(conn)).FieldByName("conn")
-	fdVal := tcpConn.FieldByName("fd")
-	pfdVal := reflect.Indirect(fdVal).FieldByName("pfd")
-
-	return pfdVal.FieldByName("Sysfd").Int()
-}
 
 func checkReceivedMsgBytes(msgBytes []byte) error {
 	if len(msgBytes) < codec.HeadLength {

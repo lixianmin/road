@@ -60,7 +60,7 @@ func main() {
 
 func listenTcp() {
 	var address = ":4444"
-	var accept = epoll.NewAioAcceptor(address, epoll.WithReceivedChanSize(1))
+	var accept = epoll.NewTcpAcceptor(address, epoll.WithReceivedChanSize(1))
 	var app = road.NewApp(accept,
 		road.WithSessionRateLimitBySecond(123456789),
 		road.WithHeartbeatTimeout(2*time.Second),
@@ -120,7 +120,7 @@ func listenWebSocket() {
 	const path = "/ws"
 
 	var mux = http.NewServeMux()
-	var accept = epoll.NewWebAcceptor(mux, path)
+	var accept = epoll.NewWsAcceptor(mux, path)
 	var app = road.NewApp(accept,
 		road.WithSessionRateLimitBySecond(123456789))
 

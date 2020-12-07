@@ -2,11 +2,15 @@ package epoll
 
 import (
 	"github.com/gobwas/ws"
+	"github.com/gobwas/ws/wsutil"
+	"github.com/lixianmin/road/conn/codec"
+	"github.com/xtaci/gaio"
+	"io"
 	"net"
 )
 
 /********************************************************************
-created:    2020-09-06
+created:    2020-12-07
 author:     lixianmin
 
 Copyright (C) - All Rights Reserved
@@ -14,22 +18,63 @@ Copyright (C) - All Rights Reserved
 
 type WsConn struct {
 	conn         net.Conn
-	fd           int64
+	watcher      *gaio.Watcher
 	receivedChan chan Message
+	readerWriter *WsReaderWriter
+}
+
+func newWsConn(conn net.Conn, watcher *gaio.Watcher, receivedChanSize int) *WsConn {
+	var receivedChan = make(chan Message, receivedChanSize)
+	var my = &WsConn{
+		conn:         conn,
+		watcher:      watcher,
+		receivedChan: receivedChan,
+		readerWriter: NewWsReaderWriter(conn, watcher),
+	}
+
+	return my
 }
 
 func (my *WsConn) GetReceivedChan() <-chan Message {
 	return my.receivedChan
 }
 
+func (my *WsConn) onReceiveData(buff []byte) error {
+	var input = my.readerWriter.input
+	_, _ = input.Write(buff)
+
+	for input.Len() > codec.HeadLength {
+		var lastOffsetSet = input.GetOffset()
+		data, _, err := wsutil.ReadData(my.readerWriter, ws.StateServerSide)
+		if err != nil {
+			if err == io.EOF || err == io.ErrUnexpectedEOF {
+				input.SetOffset(lastOffsetSet)
+				return nil
+			}
+
+			my.receivedChan <- Message{Err: err}
+			return err
+		}
+
+		if err := checkReceivedMsgBytes(data); err != nil {
+			input.SetOffset(lastOffsetSet)
+			return nil
+		}
+
+		my.receivedChan <- Message{Data: data}
+	}
+
+	input.Tidy()
+	//logger.Info("readerSize=%d, len(buff)=%d", my.readerWriter.ReaderSize(), len(buff))
+	return nil
+}
+
 // Write writes data to the connection.
 // Write can be made to time out and return an Error with Timeout() == true
 // after a fixed time limit; see SetDeadline and SetWriteDeadline.
 func (my *WsConn) Write(b []byte) (int, error) {
-	// var err = wsutil.WriteServerBinary(my.conn, b)
-	// 等价于前面注释掉的代码
 	var frame = ws.NewBinaryFrame(b)
-	var err = ws.WriteFrame(my.conn, frame)
+	var err = ws.WriteFrame(my.readerWriter, frame)
 	if err != nil {
 		return 0, err
 	}
@@ -40,7 +85,7 @@ func (my *WsConn) Write(b []byte) (int, error) {
 // Close closes the connection.
 // Any blocked Read or Write operations will be unblocked and return errors.
 func (my *WsConn) Close() error {
-	return my.conn.Close()
+	return my.watcher.Free(my.conn)
 }
 
 // LocalAddr returns the local address.
@@ -52,42 +97,3 @@ func (my *WsConn) LocalAddr() net.Addr {
 func (my *WsConn) RemoteAddr() net.Addr {
 	return my.conn.RemoteAddr()
 }
-
-//// SetDeadline sets the read and write deadlines associated
-//// with the connection. It is equivalent to calling both
-//// SetReadDeadline and SetWriteDeadline.
-////
-//// A deadline is an absolute time after which I/O operations
-//// fail with a timeout (see type Error) instead of
-//// blocking. The deadline applies to all future and pending
-//// I/O, not just the immediately following call to Read or
-//// Write. After a deadline has been exceeded, the connection
-//// can be refreshed by setting a deadline in the future.
-////
-//// An idle timeout can be implemented by repeatedly extending
-//// the deadline after successful Read or Write calls.
-////
-//// A zero value for t means I/O operations will not time out.
-//func (my *WsConn) SetDeadline(t time.Time) error {
-//	if err := my.SetReadDeadline(t); err != nil {
-//		return err
-//	}
-//
-//	return my.SetWriteDeadline(t)
-//}
-//
-//// SetReadDeadline sets the deadline for future Read calls
-//// and any currently-blocked Read call.
-//// A zero value for t means Read will not time out.
-//func (my *WsConn) SetReadDeadline(t time.Time) error {
-//	return my.conn.SetReadDeadline(t)
-//}
-//
-//// SetWriteDeadline sets the deadline for future Write calls
-//// and any currently-blocked Write call.
-//// Even if write times out, it may return n > 0, indicating that
-//// some of the data was successfully written.
-//// A zero value for t means Write will not time out.
-//func (my *WsConn) SetWriteDeadline(t time.Time) error {
-//	return my.conn.SetWriteDeadline(t)
-//}
