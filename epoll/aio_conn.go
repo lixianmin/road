@@ -15,19 +15,19 @@ Copyright (C) - All Rights Reserved
 *********************************************************************/
 
 type AioConn struct {
-	conn          net.Conn
-	watcher       *gaio.Watcher
-	receivedChan  chan Message
-	inboundBuffer *bytes.Buffer
+	conn         net.Conn
+	watcher      *gaio.Watcher
+	receivedChan chan Message
+	input        *bytes.Buffer
 }
 
 func newAioConn(conn net.Conn, watcher *gaio.Watcher, receivedChanSize int) *AioConn {
 	var receivedChan = make(chan Message, receivedChanSize)
 	var my = &AioConn{
-		conn:          conn,
-		watcher:       watcher,
-		receivedChan:  receivedChan,
-		inboundBuffer: gBufferPool.Get(),
+		conn:         conn,
+		watcher:      watcher,
+		receivedChan: receivedChan,
+		input:        gBufferPool.Get(),
 	}
 
 	return my
@@ -38,14 +38,14 @@ func (my *AioConn) GetReceivedChan() <-chan Message {
 }
 
 func (my *AioConn) onReceiveData(buff []byte) error {
-	var inboundBuffer = my.inboundBuffer
-	var _, err = inboundBuffer.Write(buff)
+	var input = my.input
+	var _, err = input.Write(buff)
 	if err != nil {
 		return err
 	}
 
 	var headLength = codec.HeadLength
-	var data = inboundBuffer.Bytes()
+	var data = input.Bytes()
 
 	for len(data) > headLength {
 		var header = data[:headLength]
@@ -63,19 +63,19 @@ func (my *AioConn) onReceiveData(buff []byte) error {
 		copy(frameData, data[:totalSize])
 		my.receivedChan <- Message{Data: frameData}
 
-		inboundBuffer.Next(totalSize)
-		data = inboundBuffer.Bytes()
+		input.Next(totalSize)
+		data = input.Bytes()
 	}
 
 	// 调整inboundBuffer的offset
 	if len(data) == 0 {
-		inboundBuffer.Reset()
+		input.Reset()
 	} else {
-		my.inboundBuffer = gBufferPool.Get()
-		my.inboundBuffer.Write(data)
+		my.input = gBufferPool.Get()
+		my.input.Write(data)
 
-		inboundBuffer.Reset()
-		gBufferPool.Put(inboundBuffer)
+		input.Reset()
+		gBufferPool.Put(input)
 	}
 
 	return nil
