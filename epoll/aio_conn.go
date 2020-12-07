@@ -1,8 +1,8 @@
 package epoll
 
 import (
-	"bytes"
 	"github.com/lixianmin/road/conn/codec"
+	"github.com/lixianmin/road/core"
 	"github.com/xtaci/gaio"
 	"net"
 )
@@ -18,7 +18,7 @@ type AioConn struct {
 	conn         net.Conn
 	watcher      *gaio.Watcher
 	receivedChan chan Message
-	input        *bytes.Buffer
+	input        *core.Buffer
 }
 
 func newAioConn(conn net.Conn, watcher *gaio.Watcher, receivedChanSize int) *AioConn {
@@ -67,7 +67,7 @@ func (my *AioConn) onReceiveData(buff []byte) error {
 		data = input.Bytes()
 	}
 
-	my.input = checkMoveBackBufferData(input)
+	my.input.Tidy()
 	return nil
 }
 

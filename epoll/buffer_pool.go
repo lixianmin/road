@@ -1,7 +1,7 @@
 package epoll
 
 import (
-	"bytes"
+	"github.com/lixianmin/road/core"
 	"sync"
 )
 
@@ -23,7 +23,7 @@ func NewBufferPool(maxBufferSize int) *BufferPool {
 	var my = &BufferPool{
 		pool: sync.Pool{
 			New: func() interface{} {
-				return &bytes.Buffer{}
+				return &core.Buffer{}
 			},
 		},
 		maxBufferSize: maxBufferSize,
@@ -32,12 +32,12 @@ func NewBufferPool(maxBufferSize int) *BufferPool {
 	return my
 }
 
-func (my *BufferPool) Get() *bytes.Buffer {
+func (my *BufferPool) Get() *core.Buffer {
 	var item = my.pool.Get()
-	return item.(*bytes.Buffer)
+	return item.(*core.Buffer)
 }
 
-func (my *BufferPool) Put(buff *bytes.Buffer) {
+func (my *BufferPool) Put(buff *core.Buffer) {
 	if buff != nil && buff.Cap() <= my.maxBufferSize {
 		buff.Reset()
 		my.pool.Put(buff)

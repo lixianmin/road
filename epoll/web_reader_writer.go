@@ -1,7 +1,7 @@
 package epoll
 
 import (
-	"bytes"
+	"github.com/lixianmin/road/core"
 	"github.com/xtaci/gaio"
 	"net"
 )
@@ -16,8 +16,8 @@ Copyright (C) - All Rights Reserved
 type WebReaderWriter struct {
 	conn    net.Conn
 	watcher *gaio.Watcher
-	input   *bytes.Buffer
-	backup  *bytes.Buffer
+	input   *core.Buffer
+	backup  *core.Buffer
 }
 
 func NewWebReaderWriter(conn net.Conn, watcher *gaio.Watcher) *WebReaderWriter {
@@ -36,7 +36,7 @@ func (my *WebReaderWriter) onReceiveData(buff []byte) {
 	_, _ = my.input.Write(buff)
 }
 
-func (my *WebReaderWriter) ReaderSize() int {
+func (my *WebReaderWriter) InputSize() int {
 	return my.input.Len()
 }
 
@@ -52,7 +52,6 @@ func (my *WebReaderWriter) Rollback() {
 
 func (my *WebReaderWriter) Read(p []byte) (n int, err error) {
 	n, err = my.input.Read(p)
-	my.input = checkMoveBackBufferData(my.input)
 	return n, err
 }
 
