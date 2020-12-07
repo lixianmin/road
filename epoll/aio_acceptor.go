@@ -66,8 +66,10 @@ func (my *AioAcceptor) goListener(address string, receivedChanSize int) {
 
 		var item = newAioConn(conn, watcher, receivedChanSize)
 		if item != nil {
-			_ = watcher.Read(item, conn, nil)
-			my.connChan <- item
+			var err = watcher.Read(item, conn, nil)
+			if err == nil {
+				my.connChan <- item
+			}
 		}
 	}
 }
@@ -84,13 +86,27 @@ func (my *AioAcceptor) goWatcher(watcher *gaio.Watcher) {
 
 		for _, item := range results {
 			if item.Error != nil {
+				logger.Info("item.Error=%q", item.Error)
 				continue
 			}
 
 			switch item.Operation {
 			case gaio.OpRead:
 				if playerConn, ok := item.Context.(*AioConn); ok {
-					_ = playerConn.onReceiveData(item.Buffer)
+					err = playerConn.onReceiveData(item.Buffer[:item.Size])
+					if err != nil {
+						logger.Info("[playerConn.onReceiveData()] err=%q", err)
+						_ = watcher.Free(item.Conn)
+						continue
+					}
+
+					// 每次想接收数据都得使用watcher.Read()重新发起一次调用，在此之前是不能接收到新数据的
+					err = watcher.Read(item.Context, item.Conn, nil)
+					if err != nil {
+						logger.Info("[watcher.Read()] err=%q", err)
+						_ = watcher.Free(item.Conn)
+						continue
+					}
 				}
 			case gaio.OpWrite:
 			}
