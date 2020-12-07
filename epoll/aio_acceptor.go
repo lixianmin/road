@@ -93,11 +93,13 @@ func (my *AioAcceptor) goWatcher(watcher *gaio.Watcher) {
 			switch item.Operation {
 			case gaio.OpRead:
 				if playerConn, ok := item.Context.(*AioConn); ok {
-					err = playerConn.onReceiveData(item.Buffer[:item.Size])
-					if err != nil {
-						logger.Info("[playerConn.onReceiveData()] err=%q", err)
-						_ = watcher.Free(item.Conn)
-						continue
+					if item.Size > 0 {
+						err = playerConn.onReceiveData(item.Buffer[:item.Size])
+						if err != nil {
+							logger.Info("[playerConn.onReceiveData()] err=%q", err)
+							_ = watcher.Free(item.Conn)
+							continue
+						}
 					}
 
 					// 每次想接收数据都得使用watcher.Read()重新发起一次调用，在此之前是不能接收到新数据的
