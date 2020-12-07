@@ -53,7 +53,7 @@ author:     lixianmin
 func main() {
 	logo.GetLogger().SetFilterLevel(logo.LevelDebug)
 	listenTcp()
-	//listenWebSocket()
+	listenWebSocket()
 
 	select {}
 }
@@ -120,9 +120,9 @@ func listenWebSocket() {
 	const path = "/ws"
 
 	var mux = http.NewServeMux()
-	var accept = epoll.NewWsAcceptor(mux, path)
+	var accept = epoll.NewWebAcceptor(mux, path)
 	var app = road.NewApp(accept,
-		road.WithSessionRateLimitBySecond(2))
+		road.WithSessionRateLimitBySecond(123456789))
 
 	var room = &Room{}
 	_ = app.Register(room, component.WithName("room"), component.WithNameFunc(strings.ToLower))
@@ -137,7 +137,7 @@ func listenWebSocket() {
 		go func() {
 			time.Sleep(1 * time.Second)
 
-			for i := 10000; i < 10010; i++ {
+			for i := 1000; i < 2000; i++ {
 				var item = Enter{Name: "kitty", ID: i, Text: text}
 				var data = convert.ToJson(item)
 				_, err := pClient.SendRequest("room.enter", data)
