@@ -18,15 +18,16 @@ type AioConn struct {
 	conn          net.Conn
 	watcher       *gaio.Watcher
 	receivedChan  chan Message
-	inboundBuffer bytes.Buffer
+	inboundBuffer *bytes.Buffer
 }
 
 func newAioConn(conn net.Conn, watcher *gaio.Watcher, receivedChanSize int) *AioConn {
 	var receivedChan = make(chan Message, receivedChanSize)
 	var my = &AioConn{
-		conn:         conn,
-		watcher:      watcher,
-		receivedChan: receivedChan,
+		conn:          conn,
+		watcher:       watcher,
+		receivedChan:  receivedChan,
+		inboundBuffer: gBufferPool.Get(),
 	}
 
 	return my
@@ -37,7 +38,7 @@ func (my *AioConn) GetReceivedChan() <-chan Message {
 }
 
 func (my *AioConn) onReceiveData(buff []byte) error {
-	var inboundBuffer = &my.inboundBuffer
+	var inboundBuffer = my.inboundBuffer
 	var _, err = inboundBuffer.Write(buff)
 	if err != nil {
 		return err
@@ -66,9 +67,15 @@ func (my *AioConn) onReceiveData(buff []byte) error {
 		data = inboundBuffer.Bytes()
 	}
 
-	// todo the buffer size may be very long
+	// 调整inboundBuffer的offset
 	if len(data) == 0 {
 		inboundBuffer.Reset()
+	} else {
+		my.inboundBuffer = gBufferPool.Get()
+		my.inboundBuffer.Write(data)
+
+		inboundBuffer.Reset()
+		gBufferPool.Put(inboundBuffer)
 	}
 
 	return nil
