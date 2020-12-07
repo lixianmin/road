@@ -40,14 +40,15 @@ func (my *WebConn) GetReceivedChan() <-chan Message {
 }
 
 func (my *WebConn) onReceiveData(buff []byte) error {
-	my.readerWriter.onReceiveData(buff)
+	var input = my.readerWriter.input
+	_, _ = input.Write(buff)
 
-	for my.readerWriter.InputSize() > codec.HeadLength {
-		my.readerWriter.TakeSnapshot()
+	for input.Len() > codec.HeadLength {
+		var lastOffsetSet = input.GetOffset()
 		data, _, err := wsutil.ReadData(my.readerWriter, ws.StateServerSide)
 		if err != nil {
 			if err == io.EOF || err == io.ErrUnexpectedEOF {
-				my.readerWriter.Rollback()
+				input.SetOffset(lastOffsetSet)
 				return nil
 			}
 
@@ -56,14 +57,14 @@ func (my *WebConn) onReceiveData(buff []byte) error {
 		}
 
 		if err := checkReceivedMsgBytes(data); err != nil {
-			my.readerWriter.Rollback()
+			input.SetOffset(lastOffsetSet)
 			return nil
 		}
 
 		my.receivedChan <- Message{Data: data}
 	}
 
-	my.readerWriter.input.Tidy()
+	input.Tidy()
 	//logger.Info("readerSize=%d, len(buff)=%d", my.readerWriter.ReaderSize(), len(buff))
 	return nil
 }

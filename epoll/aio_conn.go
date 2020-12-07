@@ -2,7 +2,6 @@ package epoll
 
 import (
 	"github.com/lixianmin/road/conn/codec"
-	"github.com/lixianmin/road/core"
 	"github.com/xtaci/gaio"
 	"net"
 )
@@ -18,7 +17,7 @@ type AioConn struct {
 	conn         net.Conn
 	watcher      *gaio.Watcher
 	receivedChan chan Message
-	input        *core.Buffer
+	input        *Buffer
 }
 
 func newAioConn(conn net.Conn, watcher *gaio.Watcher, receivedChanSize int) *AioConn {
@@ -27,7 +26,7 @@ func newAioConn(conn net.Conn, watcher *gaio.Watcher, receivedChanSize int) *Aio
 		conn:         conn,
 		watcher:      watcher,
 		receivedChan: receivedChan,
-		input:        &core.Buffer{},
+		input:        &Buffer{},
 	}
 
 	return my
