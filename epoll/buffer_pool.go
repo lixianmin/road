@@ -39,6 +39,7 @@ func (my *BufferPool) Get() *bytes.Buffer {
 
 func (my *BufferPool) Put(buff *bytes.Buffer) {
 	if buff != nil && buff.Cap() <= my.maxBufferSize {
+		buff.Reset()
 		my.pool.Put(buff)
 	}
 }

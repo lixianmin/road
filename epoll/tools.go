@@ -54,7 +54,6 @@ func checkSwapBuffer(input *bytes.Buffer) *bytes.Buffer {
 		var swap = gBufferPool.Get()
 		swap.Write(data)
 
-		input.Reset()
 		gBufferPool.Put(input)
 		return swap
 	}
