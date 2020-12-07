@@ -66,7 +66,6 @@ func (my *PlayerAcceptor) goWatcher(watcher *gaio.Watcher) {
 					if err != nil {
 						logger.Info("[watcher.Read()] err=%q", err)
 						_ = watcher.Free(item.Conn)
-						continue
 					}
 				}
 			case gaio.OpWrite:

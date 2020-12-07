@@ -38,11 +38,11 @@ type (
 	}
 
 	sessionFetus struct {
-		isHandshakeReceived bool  // 是否接收到handshake消息
-		lastAt              int64 // 最后一时收到数据的时间戳
-		deltaDeadline       int64 // 用于判断心跳是不超时
-		rateLimitTokens     int32 // 限流令牌
-		rateLimitWindow     int32 // 限流窗口
+		isHandshakeReceived bool          // 是否接收到handshake消息
+		lastAt              time.Time     // 最后一时收到数据的时间戳
+		heartbeatTimeout    time.Duration // 用于判断心跳是不超时
+		rateLimitTokens     int32         // 限流令牌
+		rateLimitWindow     int32         // 限流窗口
 	}
 
 	receivedItem struct {

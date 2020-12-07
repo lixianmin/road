@@ -32,16 +32,16 @@ func (my *Session) goSessionLoop(later loom.Later) {
 	var receivedChan = my.conn.GetReceivedChan()
 	var closeChan = my.wc.C()
 	var app = my.app
-	var heartbeatTimer = app.wheelSecond.NewTimer(app.heartbeatTimeout)
 
-	var heartbeatSeconds = int32(app.heartbeatTimeout / time.Second)
-	var stepRateLimitTokens = heartbeatSeconds * app.rateLimitBySecond
+	var heartbeatInterval = app.heartbeatTimeout / 3
+	var heartbeatTimer = app.wheelSecond.NewTimer(heartbeatInterval)
+	var stepRateLimitTokens = int32(float64(heartbeatInterval) / float64(time.Second) * float64(app.rateLimitBySecond))
 
 	var fetus = &sessionFetus{
-		lastAt:          time.Now().Unix(),
-		deltaDeadline:   int64(3 * app.heartbeatTimeout / time.Second),
-		rateLimitTokens: stepRateLimitTokens,
-		rateLimitWindow: 2 * stepRateLimitTokens,
+		lastAt:           time.Now(),
+		heartbeatTimeout: app.heartbeatTimeout,
+		rateLimitTokens:  stepRateLimitTokens,
+		rateLimitWindow:  2 * stepRateLimitTokens,
 	}
 
 	for {
@@ -62,7 +62,7 @@ func (my *Session) goSessionLoop(later loom.Later) {
 				return
 			}
 		case msg := <-receivedChan:
-			fetus.lastAt = time.Now().Unix()
+			fetus.lastAt = time.Now()
 			fetus.rateLimitTokens--
 			if err := my.onReceivedMessage(fetus, msg); err != nil {
 				logger.Info("close session(%d) by onReceivedMessage() err=%q", my.id, err)
@@ -84,9 +84,9 @@ func (my *Session) onHeartbeat(fetus *sessionFetus) error {
 		return errors.New("don't received handshake, disconnect")
 	}
 
-	deadline := time.Now().Unix() - fetus.deltaDeadline
-	if fetus.lastAt < deadline {
-		return fmt.Errorf("session heartbeat timeout, lastAt=%d, deadline=%d", fetus.lastAt, deadline)
+	var passedTime = time.Now().Sub(fetus.lastAt)
+	if passedTime > fetus.heartbeatTimeout {
+		return fmt.Errorf("session heartbeat timeout, lastAt=%s, heatbeatDeadline=%s", fetus.lastAt, fetus.heartbeatTimeout)
 	}
 
 	// 发送心跳包，如果网络是通的，收到心跳返回时会刷新 lastAt
