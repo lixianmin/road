@@ -33,13 +33,13 @@ func (my *Session) goSessionLoop(later loom.Later) {
 	var closeChan = my.wc.C()
 	var app = my.app
 
-	var heartbeatInterval = app.heartbeatTimeout / 3
+	var heartbeatInterval = app.heartbeatInterval
 	var heartbeatTimer = app.wheelSecond.NewTimer(heartbeatInterval)
-	var stepRateLimitTokens = int32(float64(heartbeatInterval) / float64(time.Second) * float64(app.rateLimitBySecond))
+	var stepRateLimitTokens = mathx.MaxInt32(1, int32(float64(heartbeatInterval)/float64(time.Second)*float64(app.rateLimitBySecond)))
 
 	var fetus = &sessionFetus{
 		lastAt:           time.Now(),
-		heartbeatTimeout: app.heartbeatTimeout,
+		heartbeatTimeout: heartbeatInterval * 3,
 		rateLimitTokens:  stepRateLimitTokens,
 		rateLimitWindow:  2 * stepRateLimitTokens,
 	}
@@ -86,7 +86,7 @@ func (my *Session) onHeartbeat(fetus *sessionFetus) error {
 
 	var passedTime = time.Now().Sub(fetus.lastAt)
 	if passedTime > fetus.heartbeatTimeout {
-		return fmt.Errorf("session heartbeat timeout, lastAt=%s, heatbeatDeadline=%s", fetus.lastAt, fetus.heartbeatTimeout)
+		return fmt.Errorf("session heartbeat timeout, lastAt=%s, heartbeatTimeout=%s", fetus.lastAt, fetus.heartbeatTimeout)
 	}
 
 	// 发送心跳包，如果网络是通的，收到心跳返回时会刷新 lastAt

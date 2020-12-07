@@ -13,7 +13,7 @@ Copyright (C) - All Rights Reserved
 *********************************************************************/
 
 type appOptions struct {
-	HeartbeatTimeout         time.Duration // 心跳超时时间
+	HeartbeatInterval        time.Duration // 心跳间隔
 	DataCompression          bool          // 数据是否压缩
 	Logger                   logo.ILogger  // 自定义日志对象，默认只输出到控制台
 	SessionSendingChanSize   int           // session的发送缓冲区大小
@@ -23,10 +23,10 @@ type appOptions struct {
 
 type AppOption func(*appOptions)
 
-func WithHeartbeatTimeout(timeout time.Duration) AppOption {
+func WithHeartbeatInterval(interval time.Duration) AppOption {
 	return func(options *appOptions) {
-		if timeout > 0 {
-			options.HeartbeatTimeout = timeout
+		if interval > 0 {
+			options.HeartbeatInterval = interval
 		}
 	}
 }

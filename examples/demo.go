@@ -63,7 +63,7 @@ func listenTcp() {
 	var accept = epoll.NewTcpAcceptor(address, epoll.WithReceivedChanSize(1))
 	var app = road.NewApp(accept,
 		road.WithSessionRateLimitBySecond(123456789),
-		road.WithHeartbeatTimeout(2*time.Second),
+		road.WithHeartbeatInterval(2*time.Second),
 		road.WithSessionSendingChanSize(1))
 
 	var room = &Room{}

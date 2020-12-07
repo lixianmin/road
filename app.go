@@ -34,7 +34,7 @@ type (
 		messageEncoder        message.Encoder
 		serializer            serialize.Serializer
 		wheelSecond           *loom.Wheel
-		heartbeatTimeout      time.Duration
+		heartbeatInterval     time.Duration
 		heartbeatPacketData   []byte
 		handshakeResponseData []byte
 		sendingChanSize       int
@@ -58,7 +58,7 @@ type (
 func NewApp(accept epoll.Acceptor, opts ...AppOption) *App {
 	// 默认值
 	var options = appOptions{
-		HeartbeatTimeout:         5 * time.Second,
+		HeartbeatInterval:        5 * time.Second,
 		DataCompression:          false,
 		Logger:                   nil,
 		SessionSendingChanSize:   16,
@@ -79,8 +79,8 @@ func NewApp(accept epoll.Acceptor, opts ...AppOption) *App {
 		packetEncoder:     codec.NewPomeloPacketEncoder(),
 		messageEncoder:    message.NewMessagesEncoder(options.DataCompression),
 		serializer:        serialize.NewJsonSerializer(),
-		wheelSecond:       loom.NewWheel(time.Second, int(options.HeartbeatTimeout/time.Second)+1),
-		heartbeatTimeout:  options.HeartbeatTimeout,
+		wheelSecond:       loom.NewWheel(time.Second, int(options.HeartbeatInterval/time.Second)+1),
+		heartbeatInterval: options.HeartbeatInterval,
 		sendingChanSize:   options.SessionSendingChanSize,
 		taskQueueSize:     options.SessionTaskQueueSize,
 		rateLimitBySecond: int32(options.SessionRateLimitBySecond),
@@ -198,7 +198,7 @@ func (my *App) Documentation(getPtrNames bool) (map[string]interface{}, error) {
 		return nil, err
 	}
 
-	return map[string]interface{}{"handlers": handlerDocs,}, nil
+	return map[string]interface{}{"handlers": handlerDocs}, nil
 }
 
 func (my *App) encodeHeartbeatData() []byte {
@@ -214,7 +214,7 @@ func (my *App) encodeHandshakeData(dataCompression bool) []byte {
 	hData := map[string]interface{}{
 		"code": 200,
 		"sys": map[string]interface{}{
-			"heartbeat":  my.heartbeatTimeout.Seconds(),
+			"heartbeat":  my.heartbeatInterval.Seconds(),
 			"dict":       message.GetDictionary(),
 			"serializer": my.serializer.GetName(),
 		},
