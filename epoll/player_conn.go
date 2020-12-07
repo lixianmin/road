@@ -10,6 +10,7 @@ Copyright (C) - All Rights Reserved
 *********************************************************************/
 
 type PlayerConn interface {
+	onReceiveData(buff []byte) error
 	GetReceivedChan() <-chan Message
 	Write(b []byte) (int, error)
 	Close() error
