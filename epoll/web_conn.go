@@ -3,7 +3,9 @@ package epoll
 import (
 	"github.com/gobwas/ws"
 	"github.com/gobwas/ws/wsutil"
+	"github.com/lixianmin/road/conn/codec"
 	"github.com/xtaci/gaio"
+	"io"
 	"net"
 )
 
@@ -39,18 +41,29 @@ func (my *WebConn) GetReceivedChan() <-chan Message {
 
 func (my *WebConn) onReceiveData(buff []byte) error {
 	my.readerWriter.onReceiveData(buff)
-	data, _, err := wsutil.ReadData(my.readerWriter, ws.StateServerSide)
-	if err != nil {
-		my.receivedChan <- Message{Err: err}
-		return err
+
+	for my.readerWriter.ReaderSize() > codec.HeadLength {
+		my.readerWriter.TakeSnapshot()
+		data, _, err := wsutil.ReadData(my.readerWriter, ws.StateServerSide)
+		if err != nil {
+			if err == io.EOF || err == io.ErrUnexpectedEOF {
+				my.readerWriter.Rollback()
+				return nil
+			}
+
+			my.receivedChan <- Message{Err: err}
+			return err
+		}
+
+		if err := checkReceivedMsgBytes(data); err != nil {
+			my.readerWriter.Rollback()
+			return nil
+		}
+
+		my.receivedChan <- Message{Data: data}
 	}
 
-	if err := checkReceivedMsgBytes(data); err != nil {
-		my.receivedChan <- Message{Err: err}
-		return err
-	}
-
-	my.receivedChan <- Message{Data: data}
+	//logger.Info("readerSize=%d, len(buff)=%d", my.readerWriter.ReaderSize(), len(buff))
 	return nil
 }
 

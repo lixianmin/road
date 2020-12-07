@@ -45,7 +45,7 @@ func checkReceivedMsgBytes(msgBytes []byte) error {
 	return nil
 }
 
-func checkSwapBuffer(input *bytes.Buffer) *bytes.Buffer {
+func checkMoveBackBufferData(input *bytes.Buffer) *bytes.Buffer {
 	var data = input.Bytes()
 	if len(data) == 0 {
 		input.Reset()

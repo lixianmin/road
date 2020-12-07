@@ -67,7 +67,7 @@ func (my *AioConn) onReceiveData(buff []byte) error {
 		data = input.Bytes()
 	}
 
-	my.input = checkSwapBuffer(input)
+	my.input = checkMoveBackBufferData(input)
 	return nil
 }
 
