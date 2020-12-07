@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"github.com/lixianmin/got/loom"
 	"github.com/lixianmin/got/mathx"
+	"github.com/lixianmin/got/timex"
 	"github.com/lixianmin/road/component"
 	"github.com/lixianmin/road/conn/message"
 	"github.com/lixianmin/road/conn/packet"
@@ -86,7 +87,7 @@ func (my *Session) onHeartbeat(fetus *sessionFetus) error {
 
 	var passedTime = time.Now().Sub(fetus.lastAt)
 	if passedTime > fetus.heartbeatTimeout {
-		return fmt.Errorf("session heartbeat timeout, lastAt=%s, heartbeatTimeout=%s", fetus.lastAt, fetus.heartbeatTimeout)
+		return fmt.Errorf("session heartbeat timeout, lastAt=%q, heartbeatTimeout=%s", timex.FormatTime(fetus.lastAt), fetus.heartbeatTimeout)
 	}
 
 	// 发送心跳包，如果网络是通的，收到心跳返回时会刷新 lastAt
