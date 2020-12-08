@@ -54,19 +54,19 @@ func (my *Session) goSessionLoop(later loom.Later) {
 			fetus.rateLimitTokens = mathx.MinInt32(fetus.rateLimitWindow, fetus.rateLimitTokens+stepRateLimitTokens)
 
 			if err := my.onHeartbeat(fetus); err != nil {
-				logger.Info("close session(%d) by onHeartbeat() err=%q", my.id, err)
+				logger.Info("close session(%d) by onHeartbeat(), err=%q", my.id, err)
 				return
 			}
 		case data := <-my.sendingChan:
 			if err := my.writeBytes(data); err != nil {
-				logger.Info("close session(%d) by  writeBytes() err=%q", my.id, err)
+				logger.Info("close session(%d) by writeBytes(), err=%q", my.id, err)
 				return
 			}
 		case msg := <-receivedChan:
 			fetus.lastAt = time.Now()
 			fetus.rateLimitTokens--
 			if err := my.onReceivedMessage(fetus, msg); err != nil {
-				logger.Info("close session(%d) by onReceivedMessage() err=%q", my.id, err)
+				logger.Info("close session(%d) by onReceivedMessage(), err=%q", my.id, err)
 				return
 			}
 		case task := <-my.tasks.C:
@@ -95,15 +95,14 @@ func (my *Session) onHeartbeat(fetus *sessionFetus) error {
 		return fmt.Errorf("failed to write in conn: %s", err.Error())
 	}
 
-	logger.Debug("sessionId=%d, sent heartbeat", my.id)
+	logger.Debug("session(%d) sent heartbeat", my.id)
 	return nil
 }
 
 func (my *Session) onReceivedMessage(fetus *sessionFetus, msg epoll.Message) error {
 	var err = msg.Err
 	if err != nil {
-		var err1 = fmt.Errorf("error reading next available message: %s", err.Error())
-		return err1
+		return msg.Err
 	}
 
 	packets, err := my.app.packetDecoder.Decode(msg.Data)
@@ -122,13 +121,13 @@ func (my *Session) onReceivedMessage(fetus *sessionFetus, msg epoll.Message) err
 			}
 		case packet.HandshakeAck:
 			// handshake的流程是 client (request) --> server (response) --> client (ack) --> server (received ack)
-			logger.Debug("received handshake ACK")
+			logger.Debug("session(%d) received handshake ACK", my.id)
 		case packet.Data:
 			if err := my.onReceivedData(fetus, p); err != nil {
 				return err
 			}
 		case packet.Heartbeat:
-			logger.Debug("sessionId=%d, received heartbeat", my.id)
+			logger.Debug("session(%d) received heartbeat", my.id)
 		}
 	}
 

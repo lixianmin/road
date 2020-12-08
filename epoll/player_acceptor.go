@@ -45,7 +45,9 @@ func (my *PlayerAcceptor) goWatcher(watcher *gaio.Watcher) {
 
 		for _, item := range results {
 			if item.Error != nil {
-				logger.Info("item.Error=%q", item.Error)
+				if playerConn, ok := item.Context.(PlayerConn); ok {
+					playerConn.sendErrorMessage(item.Error)
+				}
 				continue
 			}
 
@@ -55,7 +57,7 @@ func (my *PlayerAcceptor) goWatcher(watcher *gaio.Watcher) {
 					if item.Size > 0 {
 						err = playerConn.onReceiveData(item.Buffer[:item.Size])
 						if err != nil {
-							logger.Info("[playerConn.onReceiveData()] err=%q", err)
+							playerConn.sendErrorMessage(err)
 							_ = watcher.Free(item.Conn)
 							continue
 						}
@@ -64,7 +66,7 @@ func (my *PlayerAcceptor) goWatcher(watcher *gaio.Watcher) {
 					// 每次想接收数据都得使用watcher.Read()重新发起一次调用，在此之前是不能接收到新数据的
 					err = watcher.Read(item.Context, item.Conn, nil)
 					if err != nil {
-						logger.Info("[watcher.Read()] err=%q", err)
+						playerConn.sendErrorMessage(err)
 						_ = watcher.Free(item.Conn)
 					}
 				}

@@ -11,6 +11,8 @@ Copyright (C) - All Rights Reserved
 
 type PlayerConn interface {
 	onReceiveData(buff []byte) error
+	sendErrorMessage(err error)
+
 	GetReceivedChan() <-chan Message
 	Write(b []byte) (int, error)
 	Close() error

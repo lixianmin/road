@@ -35,6 +35,12 @@ func newWsConn(conn net.Conn, watcher *gaio.Watcher, receivedChanSize int) *WsCo
 	return my
 }
 
+func (my *WsConn) sendErrorMessage(err error) {
+	if err != nil {
+		my.receivedChan <- Message{Err: err}
+	}
+}
+
 func (my *WsConn) GetReceivedChan() <-chan Message {
 	return my.receivedChan
 }

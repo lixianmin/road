@@ -32,6 +32,12 @@ func newTcpConn(conn net.Conn, watcher *gaio.Watcher, receivedChanSize int) *Tcp
 	return my
 }
 
+func (my *TcpConn) sendErrorMessage(err error) {
+	if err != nil {
+		my.receivedChan <- Message{Err: err}
+	}
+}
+
 func (my *TcpConn) GetReceivedChan() <-chan Message {
 	return my.receivedChan
 }
