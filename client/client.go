@@ -32,7 +32,6 @@ import (
 	"github.com/lixianmin/road/conn/message"
 	"github.com/lixianmin/road/conn/packet"
 	"github.com/lixianmin/road/logger"
-	"github.com/lixianmin/road/session"
 	"github.com/lixianmin/road/util/compression"
 	"net"
 	"net/url"
@@ -47,8 +46,8 @@ type HandshakeSys struct {
 	Serializer string            `json:"serializer"`
 }
 
-// HandshakeData struct
-type HandshakeData struct {
+// HandshakeResponse struct
+type HandshakeResponse struct {
 	Code int          `json:"code"`
 	Sys  HandshakeSys `json:"sys"`
 }
@@ -60,17 +59,17 @@ type pendingRequest struct {
 
 // Client struct
 type Client struct {
-	conn                net.Conn
-	isConnected         int32
-	packetEncoder       codec.PacketEncoder
-	packetDecoder       codec.PacketDecoder
-	packetChan          chan *packet.Packet
-	IncomingMsgChan     chan *message.Message
-	requestTimeout      time.Duration
-	nextID              uint32
-	messageEncoder      message.Encoder
-	clientHandshakeData *session.HandshakeData
-	wc                  loom.WaitClose
+	conn             net.Conn
+	isConnected      int32
+	packetEncoder    codec.PacketEncoder
+	packetDecoder    codec.PacketDecoder
+	packetChan       chan *packet.Packet
+	IncomingMsgChan  chan *message.Message
+	requestTimeout   time.Duration
+	nextID           uint32
+	messageEncoder   message.Encoder
+	handshakeRequest *HandshakeRequest
+	wc               loom.WaitClose
 }
 
 // MsgChannel return the incoming message channel
@@ -92,14 +91,14 @@ func New(requestTimeout ...time.Duration) *Client {
 	}
 
 	return &Client{
-		isConnected:     0,
-		packetEncoder:   codec.NewPomeloPacketEncoder(),
-		packetDecoder:   codec.NewPomeloPacketDecoder(),
-		packetChan:      make(chan *packet.Packet, 10),
-		requestTimeout:  reqTimeout,
+		isConnected:    0,
+		packetEncoder:  codec.NewPomeloPacketEncoder(),
+		packetDecoder:  codec.NewPomeloPacketDecoder(),
+		packetChan:     make(chan *packet.Packet, 10),
+		requestTimeout: reqTimeout,
 		messageEncoder: message.NewMessagesEncoder(false),
-		clientHandshakeData: &session.HandshakeData{
-			Sys: session.HandshakeClientData{
+		handshakeRequest: &HandshakeRequest{
+			Sys: HandshakeClientData{
 				Platform:    "mac",
 				LibVersion:  "0.3.5-release",
 				BuildNumber: "20",
@@ -113,12 +112,12 @@ func New(requestTimeout ...time.Duration) *Client {
 }
 
 // SetClientHandshakeData sets the data to send inside handshake
-func (c *Client) SetClientHandshakeData(data *session.HandshakeData) {
-	c.clientHandshakeData = data
+func (c *Client) SetHandshakeRequest(data *HandshakeRequest) {
+	c.handshakeRequest = data
 }
 
 func (c *Client) sendHandshakeRequest() error {
-	enc, err := json.Marshal(c.clientHandshakeData)
+	enc, err := json.Marshal(c.handshakeRequest)
 	if err != nil {
 		return err
 	}
@@ -144,7 +143,7 @@ func (c *Client) handleHandshakeResponse() error {
 		return fmt.Errorf("got first packet from server that is not a handshake, aborting")
 	}
 
-	handshake := &HandshakeData{}
+	handshake := &HandshakeResponse{}
 	if compression.IsCompressed(handshakePacket.Data) {
 		handshakePacket.Data, err = compression.InflateData(handshakePacket.Data)
 		if err != nil {

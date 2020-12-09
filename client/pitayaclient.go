@@ -23,7 +23,6 @@ package client
 import (
 	"crypto/tls"
 	"github.com/lixianmin/road/conn/message"
-	"github.com/lixianmin/road/session"
 )
 
 // PitayaClient iface
@@ -35,5 +34,5 @@ type PitayaClient interface {
 	MsgChannel() chan *message.Message
 	SendNotify(route string, data []byte) error
 	SendRequest(route string, data []byte) (uint, error)
-	SetClientHandshakeData(data *session.HandshakeData)
+	SetHandshakeRequest(data *HandshakeRequest)
 }
