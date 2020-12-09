@@ -1,6 +1,7 @@
 package epoll
 
 import (
+	"fmt"
 	"github.com/lixianmin/got/loom"
 	"github.com/lixianmin/road/logger"
 	"github.com/xtaci/gaio"
@@ -21,6 +22,8 @@ type PlayerAcceptor struct {
 func newPlayerAcceptor() *PlayerAcceptor {
 	var watcher, err = gaio.NewWatcher()
 	if err != nil {
+		var message = fmt.Sprintf("watcher is %v, err=%q", watcher, err)
+		panic(message)
 		return nil
 	}
 

@@ -40,23 +40,18 @@ func NewTcpAcceptor(address string, opts ...AcceptorOption) *TcpAcceptor {
 func (my *TcpAcceptor) goListener(address string, receivedChanSize int) {
 	defer loom.DumpIfPanic()
 
-	var watcher = my.getWatcher()
-	if watcher == nil {
-		logger.Warn("watcher is nil")
-		return
-	}
-
 	listener, err := net.Listen("tcp", address)
 	if err != nil {
-		logger.Warn("Failed to listen on address=%q, err=%q", address, err)
+		logger.Warn("failed to listen on address=%q, err=%q", address, err)
 		return
 	}
 	defer listener.Close()
 
+	var watcher = my.getWatcher()
 	for !my.IsClosed() {
 		conn, err := listener.Accept()
 		if err != nil {
-			logger.Info("Failed to accept TCP connection: %s", err)
+			logger.Info("failed to accept TCP connection: %q", err)
 			continue
 		}
 
