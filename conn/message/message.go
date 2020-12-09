@@ -68,7 +68,7 @@ var (
 // Message represents a unmarshaled message or a message which to be marshaled
 type Message struct {
 	Type       Type   // message type
-	ID         uint   // unique id, zero while notify mode
+	Id         uint   // unique id, zero while notify mode
 	Route      string // route for locating service
 	Data       []byte // payload
 	compressed bool   // is message compressed
@@ -86,9 +86,9 @@ func New(err ...bool) *Message {
 
 // String, implementation of fmt.Stringer interface
 func (m *Message) String() string {
-	return fmt.Sprintf("Type: %s, ID: %d, Route: %s, Compressed: %t, Error: %t, Data: %v, BodyLength: %d",
+	return fmt.Sprintf("Type: %s, Id: %d, Route: %s, Compressed: %t, Error: %t, Data: %v, BodyLength: %d",
 		types[m.Type],
-		m.ID,
+		m.Id,
 		m.Route,
 		m.compressed,
 		m.Err,

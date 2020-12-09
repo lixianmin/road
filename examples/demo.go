@@ -93,6 +93,11 @@ func listenTcp() {
 			if err != nil {
 				logger.Error(err.Error())
 			}
+
+			_, err2 := pClient.SendRequest("room.sayerror", data)
+			if err2 != nil {
+				logger.Error(err2)
+			}
 		}
 	}()
 
@@ -102,7 +107,7 @@ func listenTcp() {
 			case msg := <-pClient.MsgChannel():
 				if msg != nil {
 					if msg.Err {
-						logger.Warn(string(msg.Data))
+						logger.Warn("id=%d, err=%s", msg.Id, string(msg.Data))
 					} else {
 						var item Enter
 						convert.FromJson(msg.Data, &item)

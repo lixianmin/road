@@ -55,7 +55,7 @@ func (my *Session) Kick() error {
 func (my *Session) encodeMessageMayError(msg message.Message, err error) ([]byte, error) {
 	if err != nil {
 		msg.Err = true
-		logger.Info("process failed, route=%s, err=%q", msg.Route, err.Error())
+		//logger.Info("process failed, route=%s, err=%q", msg.Route, err.Error())
 
 		// err需要支持json序列化的话，就不能是一个简单的字符串
 		var errWrap = checkCreateError(err)

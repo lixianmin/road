@@ -66,7 +66,7 @@ type Client struct {
 	packetChan       chan *packet.Packet
 	IncomingMsgChan  chan *message.Message
 	requestTimeout   time.Duration
-	nextID           uint32
+	nextId           uint32
 	messageEncoder   message.Encoder
 	handshakeRequest *HandshakeRequest
 	wc               loom.WaitClose
@@ -364,7 +364,7 @@ func (c *Client) sendMsg(msgType message.Type, route string, data []byte) (uint,
 	// TODO mount msg and encode
 	m := message.Message{
 		Type:  msgType,
-		ID:    uint(atomic.AddUint32(&c.nextID, 1)),
+		Id:    uint(atomic.AddUint32(&c.nextId, 1)),
 		Route: route,
 		Data:  data,
 		Err:   false,
@@ -375,8 +375,8 @@ func (c *Client) sendMsg(msgType message.Type, route string, data []byte) (uint,
 	}
 
 	if err != nil {
-		return m.ID, err
+		return m.Id, err
 	}
 	_, err = c.conn.Write(p)
-	return m.ID, err
+	return m.Id, err
 }

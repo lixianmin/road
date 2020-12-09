@@ -157,9 +157,8 @@ func (my *Session) onReceivedData(fetus *sessionFetus, p *packet.Packet) error {
 	needReply := item.msg.Type != message.Notify
 	if fetus.rateLimitTokens <= 0 {
 		if needReply {
-			var payload, err = my.app.serializer.Marshal("rate limit triggered, ignore processing")
-			var msg = message.Message{Type: message.Response, ID: item.msg.ID, Data: payload}
-			var data, err1 = my.encodeMessageMayError(msg, err)
+			var msg = message.Message{Type: message.Response, Id: item.msg.Id}
+			var data, err1 = my.encodeMessageMayError(msg, ErrTriggerRateLimit)
 			if err1 != nil {
 				return err1
 			}
@@ -186,7 +185,7 @@ func (my *Session) onReceivedData(fetus *sessionFetus, p *packet.Packet) error {
 
 	payload, err := processReceivedData(item, handler, my.app.serializer, my.app.hookCallback)
 	if needReply {
-		var msg = message.Message{Type: message.Response, ID: item.msg.ID, Data: payload}
+		var msg = message.Message{Type: message.Response, Id: item.msg.Id, Data: payload}
 		var data, err1 = my.encodeMessageMayError(msg, err)
 		if err1 != nil {
 			return err1

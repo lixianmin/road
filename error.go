@@ -9,6 +9,7 @@ author:     lixianmin
 Copyright (C) - All Rights Reserved
 *********************************************************************/
 
+var ErrTriggerRateLimit = NewError("ErrTriggerRateLimit", "please send request more slowly")
 var ErrKickedByRateLimit = NewError("KickedByRateLimit", "cost too many tokens in a rate limit window")
 
 type Error struct {

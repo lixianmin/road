@@ -80,7 +80,7 @@ func (my *MessagesEncoder) Encode(message *Message) ([]byte, error) {
 	buf = append(buf, flag)
 
 	if message.Type == Request || message.Type == Response {
-		n := message.ID
+		n := message.Id
 		// variant length encode
 		for {
 			b := byte(n % 128)
@@ -148,7 +148,7 @@ func Decode(data []byte) (*Message, error) {
 				break
 			}
 		}
-		m.ID = id
+		m.Id = id
 	}
 
 	m.Err = flag&errorMask == errorMask
