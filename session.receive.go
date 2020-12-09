@@ -236,7 +236,7 @@ func processReceivedData(data receivedItem, handler *component.Handler, serializ
 	}
 
 	resp, err := hookCallback(func() (i interface{}, e error) {
-		return util.Pcall(handler.Method, args)
+		return util.PCall(handler.Method, args)
 	})
 
 	if err != nil {

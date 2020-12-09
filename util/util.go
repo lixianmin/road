@@ -14,8 +14,8 @@ author:     lixianmin
 Copyright (C) - All Rights Reserved
 *********************************************************************/
 
-// Pcall calls a method that returns an interface and an error and recovers in case of panic
-func Pcall(method reflect.Method, args []reflect.Value) (rets interface{}, err error) {
+// PCall calls a method that returns an interface and an error and recovers in case of panic
+func PCall(method reflect.Method, args []reflect.Value) (rets interface{}, err error) {
 	defer func() {
 		if rec := recover(); rec != nil {
 			logger.Error("methodName=%d, recover=%v", method.Name, rec)
