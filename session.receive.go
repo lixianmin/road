@@ -95,7 +95,8 @@ func (my *Session) onHeartbeat(fetus *sessionFetus) error {
 		return fmt.Errorf("failed to write in conn: %s", err.Error())
 	}
 
-	logger.Debug("session(%d) sent heartbeat", my.id)
+	// 注意：libpitaya的heartbeat部分好像是问题的，只能在应用层自己做ping/pong
+	//logger.Debug("session(%d) sent heartbeat", my.id)
 	return nil
 }
 
@@ -127,7 +128,7 @@ func (my *Session) onReceivedMessage(fetus *sessionFetus, msg epoll.Message) err
 				return err
 			}
 		case packet.Heartbeat:
-			logger.Debug("session(%d) received heartbeat", my.id)
+			//logger.Debug("session(%d) received heartbeat", my.id)
 		}
 	}
 
