@@ -27,5 +27,5 @@ var (
 	ErrReplyShouldBeNotNull           = errors.New("reply must not be null")
 	ErrReceivedMsgSmallerThanExpected = errors.New("received less data than expected, EOF")
 	ErrReceivedMsgBiggerThanExpected  = errors.New("received more data than expected")
-	ErrUnexpectedEOF                  = errors.New("there is no enough data")
+	//ErrUnexpectedEOF                  = errors.New("there is no enough data")
 )
