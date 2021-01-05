@@ -28,10 +28,10 @@ import (
 	"fmt"
 	"github.com/gobwas/ws"
 	"github.com/lixianmin/got/loom"
+	"github.com/lixianmin/logo"
 	"github.com/lixianmin/road/conn/codec"
 	"github.com/lixianmin/road/conn/message"
 	"github.com/lixianmin/road/conn/packet"
-	"github.com/lixianmin/road/logger"
 	"github.com/lixianmin/road/util/compression"
 	"net"
 	"net/url"
@@ -156,7 +156,7 @@ func (c *Client) handleHandshakeResponse() error {
 		return err
 	}
 
-	logger.Debug("got handshake from sv, data: %v", handshake)
+	logo.Debug("got handshake from sv, data: %v", handshake)
 
 	if handshake.Sys.Dict != nil {
 		message.SetDictionary(handshake.Sys.Dict)
@@ -187,11 +187,11 @@ func (c *Client) handlePackets() {
 			case packet.Data:
 				m, err := message.Decode(p.Data)
 				if err != nil {
-					logger.Info("error decoding msg from sv: %s", string(m.Data))
+					logo.Info("error decoding msg from sv: %s", string(m.Data))
 				}
 				c.IncomingMsgChan <- m
 			case packet.Kick:
-				logger.Info("got kick packet from the server! disconnecting...")
+				logo.Info("got kick packet from the server! disconnecting...")
 				c.Disconnect()
 			}
 		case <-c.wc.C():
@@ -215,7 +215,7 @@ func (c *Client) readPackets(buf *bytes.Buffer) ([]*packet.Packet, error) {
 	}
 	packets, err := c.packetDecoder.Decode(buf.Bytes())
 	if err != nil {
-		logger.Info("error decoding packet from server: %s", err.Error())
+		logo.Info("error decoding packet from server: %s", err.Error())
 	}
 	totalProcessed := 0
 	for _, p := range packets {
@@ -232,7 +232,7 @@ func (c *Client) handleServerMessages() {
 	for c.IsConnected() {
 		packets, err := c.readPackets(buf)
 		if err != nil && c.IsConnected() {
-			logger.Info(err)
+			logo.Info(err)
 			break
 		}
 
@@ -254,7 +254,7 @@ func (c *Client) sendHeartbeats(interval int) {
 			p, _ := c.packetEncoder.Encode(packet.Heartbeat, []byte{})
 			_, err := c.conn.Write(p)
 			if err != nil {
-				logger.Info("error sending heartbeat to server: %s", err.Error())
+				logo.Info("error sending heartbeat to server: %s", err.Error())
 				return
 			}
 		case <-c.wc.C():

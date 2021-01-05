@@ -7,12 +7,12 @@ import (
 	"github.com/lixianmin/got/loom"
 	"github.com/lixianmin/got/mathx"
 	"github.com/lixianmin/got/timex"
+	"github.com/lixianmin/logo"
 	"github.com/lixianmin/road/component"
 	"github.com/lixianmin/road/conn/message"
 	"github.com/lixianmin/road/conn/packet"
 	"github.com/lixianmin/road/epoll"
 	"github.com/lixianmin/road/ifs"
-	"github.com/lixianmin/road/logger"
 	"github.com/lixianmin/road/route"
 	"github.com/lixianmin/road/serialize"
 	"github.com/lixianmin/road/util"
@@ -54,25 +54,25 @@ func (my *Session) goSessionLoop(later loom.Later) {
 			fetus.rateLimitTokens = mathx.MinInt32(fetus.rateLimitWindow, fetus.rateLimitTokens+stepRateLimitTokens)
 
 			if err := my.onHeartbeat(fetus); err != nil {
-				logger.Info("close session(%d) by onHeartbeat(), err=%q", my.id, err)
+				logo.Info("close session(%d) by onHeartbeat(), err=%q", my.id, err)
 				return
 			}
 		case data := <-my.sendingChan:
 			if err := my.writeBytes(data); err != nil {
-				logger.Info("close session(%d) by writeBytes(), err=%q", my.id, err)
+				logo.Info("close session(%d) by writeBytes(), err=%q", my.id, err)
 				return
 			}
 		case msg := <-receivedChan:
 			fetus.lastAt = time.Now()
 			fetus.rateLimitTokens--
 			if err := my.onReceivedMessage(fetus, msg); err != nil {
-				logger.Info("close session(%d) by onReceivedMessage(), err=%q", my.id, err)
+				logo.Info("close session(%d) by onReceivedMessage(), err=%q", my.id, err)
 				return
 			}
 		case task := <-my.tasks.C:
 			_ = task.Do(my)
 		case <-closeChan:
-			logger.Info("close session(%d) by calling session.Close()", my.id)
+			logo.Info("close session(%d) by calling session.Close()", my.id)
 			return
 		}
 	}
@@ -96,7 +96,7 @@ func (my *Session) onHeartbeat(fetus *sessionFetus) error {
 	}
 
 	// 注意：libpitaya的heartbeat部分好像是问题的，只能在应用层自己做ping/pong
-	//logger.Debug("session(%d) sent heartbeat", my.id)
+	//logo.Debug("session(%d) sent heartbeat", my.id)
 	return nil
 }
 
@@ -122,13 +122,13 @@ func (my *Session) onReceivedMessage(fetus *sessionFetus, msg epoll.Message) err
 			}
 		case packet.HandshakeAck:
 			// handshake的流程是 client (request) --> server (response) --> client (ack) --> server (received ack)
-			logger.Debug("session(%d) received handshake ACK", my.id)
+			logo.Debug("session(%d) received handshake ACK", my.id)
 		case packet.Data:
 			if err := my.onReceivedData(fetus, p); err != nil {
 				return err
 			}
 		case packet.Heartbeat:
-			//logger.Debug("session(%d) received heartbeat", my.id)
+			//logo.Debug("session(%d) received heartbeat", my.id)
 		}
 	}
 

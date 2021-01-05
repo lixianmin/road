@@ -3,9 +3,9 @@ package road
 import (
 	"context"
 	"github.com/lixianmin/got/loom"
+	"github.com/lixianmin/logo"
 	"github.com/lixianmin/road/conn/message"
 	"github.com/lixianmin/road/epoll"
-	"github.com/lixianmin/road/logger"
 	"github.com/lixianmin/road/route"
 	"net"
 	"sync/atomic"
@@ -62,7 +62,7 @@ func NewSession(app *App, conn epoll.PlayerConn) *Session {
 	}
 
 	my.tasks = loom.NewTaskQueue(loom.WithSize(app.taskQueueSize), loom.WithCloseChan(my.wc.C()))
-	logger.Info("create session(%d)", my.id)
+	logo.Info("create session(%d)", my.id)
 	loom.Go(my.goSessionLoop)
 	return my
 }

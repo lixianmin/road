@@ -1,7 +1,7 @@
 package road
 
 import (
-	"github.com/lixianmin/road/logger"
+	"github.com/lixianmin/logo"
 	"sync"
 )
 
@@ -36,7 +36,7 @@ func (my *delegate) Invoke() {
 
 	defer func() {
 		if r := recover(); r != nil {
-			logger.Info("[Invoke()] panic: r=%v", r)
+			logo.Info("[Invoke()] panic: r=%v", r)
 		}
 	}()
 

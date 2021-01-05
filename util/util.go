@@ -1,7 +1,7 @@
 package util
 
 import (
-	"github.com/lixianmin/road/logger"
+	"github.com/lixianmin/logo"
 	"github.com/lixianmin/road/ifs"
 	"github.com/lixianmin/road/serialize"
 	"reflect"
@@ -18,7 +18,7 @@ Copyright (C) - All Rights Reserved
 func PCall(method reflect.Method, args []reflect.Value) (rets interface{}, err error) {
 	defer func() {
 		if rec := recover(); rec != nil {
-			logger.Error("methodName=%d, recover=%v", method.Name, rec)
+			logo.Error("methodName=%d, recover=%v", method.Name, rec)
 		}
 	}()
 

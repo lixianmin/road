@@ -2,8 +2,8 @@ package road
 
 import (
 	"context"
+	"github.com/lixianmin/logo"
 	"github.com/lixianmin/road/ifs"
-	"github.com/lixianmin/road/logger"
 )
 
 /********************************************************************
@@ -16,7 +16,7 @@ Copyright (C) - All Rights Reserved
 func GetSessionFromCtx(ctx context.Context) *Session {
 	fetus := ctx.Value(ifs.CtxKeySession)
 	if fetus == nil {
-		logger.Warn("ctx doesn't contain the session")
+		logo.Warn("ctx doesn't contain the session")
 		return nil
 	}
 

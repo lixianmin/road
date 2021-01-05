@@ -1,9 +1,9 @@
 package road
 
 import (
+	"github.com/lixianmin/logo"
 	"github.com/lixianmin/road/conn/message"
 	"github.com/lixianmin/road/conn/packet"
-	"github.com/lixianmin/road/logger"
 	"github.com/lixianmin/road/util"
 )
 
@@ -46,7 +46,7 @@ func (my *Session) Kick() error {
 
 	select {
 	case my.sendingChan <- p:
-		logger.Info("session(%d) will be closed by Kick()", my.id)
+		logo.Info("session(%d) will be closed by Kick()", my.id)
 	case <-my.wc.C():
 	}
 	return nil
@@ -55,7 +55,7 @@ func (my *Session) Kick() error {
 func (my *Session) encodeMessageMayError(msg message.Message, err error) ([]byte, error) {
 	if err != nil {
 		msg.Err = true
-		//logger.Info("process failed, route=%s, err=%q", msg.Route, err.Error())
+		//logo.Info("process failed, route=%s, err=%q", msg.Route, err.Error())
 
 		// err需要支持json序列化的话，就不能是一个简单的字符串
 		var errWrap = checkCreateError(err)
@@ -63,14 +63,14 @@ func (my *Session) encodeMessageMayError(msg message.Message, err error) ([]byte
 		var err1 error
 		msg.Data, err1 = util.SerializeOrRaw(my.app.serializer, errWrap)
 		if err1 != nil {
-			logger.Info("serialize failed, route=%s, err1=%q", msg.Route, err1.Error())
+			logo.Info("serialize failed, route=%s, err1=%q", msg.Route, err1.Error())
 			return nil, err1
 		}
 	}
 
 	data, err2 := my.packetEncodeMessage(&msg)
 	if err2 != nil {
-		logger.Info("send failed, route=%s, err2=%q", msg.Route, err2.Error())
+		logo.Info("send failed, route=%s, err2=%q", msg.Route, err2.Error())
 		return nil, err2
 	}
 

@@ -3,7 +3,7 @@ package epoll
 import (
 	"fmt"
 	"github.com/lixianmin/got/loom"
-	"github.com/lixianmin/road/logger"
+	"github.com/lixianmin/logo"
 	"github.com/xtaci/gaio"
 	"sync/atomic"
 )
@@ -42,7 +42,7 @@ func (my *PlayerAcceptor) goWatcher(watcher *gaio.Watcher) {
 	for !my.IsClosed() {
 		var results, err = watcher.WaitIO()
 		if err != nil {
-			logger.Warn("err=%q", err)
+			logo.Warn("err=%q", err)
 			return
 		}
 

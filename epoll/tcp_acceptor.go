@@ -2,7 +2,7 @@ package epoll
 
 import (
 	"github.com/lixianmin/got/loom"
-	"github.com/lixianmin/road/logger"
+	"github.com/lixianmin/logo"
 	"net"
 )
 
@@ -42,7 +42,7 @@ func (my *TcpAcceptor) goListener(address string, receivedChanSize int) {
 
 	listener, err := net.Listen("tcp", address)
 	if err != nil {
-		logger.Warn("failed to listen on address=%q, err=%q", address, err)
+		logo.Warn("failed to listen on address=%q, err=%q", address, err)
 		return
 	}
 	defer listener.Close()
@@ -51,7 +51,7 @@ func (my *TcpAcceptor) goListener(address string, receivedChanSize int) {
 	for !my.IsClosed() {
 		conn, err := listener.Accept()
 		if err != nil {
-			logger.Info("failed to accept TCP connection: %q", err)
+			logo.Info("failed to accept TCP connection: %q", err)
 			continue
 		}
 

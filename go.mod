@@ -6,8 +6,8 @@ require (
 	github.com/gobwas/httphead v0.0.0-20180130184737-2c6c146eadee // indirect
 	github.com/gobwas/pool v0.2.1 // indirect
 	github.com/gobwas/ws v1.0.4
-	github.com/lixianmin/got v0.0.0-20201209101546-3d9ed06de901
-	github.com/lixianmin/logo v0.0.0-20201209101846-d46d6c8058e8
+	github.com/lixianmin/got v0.0.0-20210105052344-7d87f38885bd
+	github.com/lixianmin/logo v0.0.0-20210105060547-013f5a1deb94
 	github.com/xtaci/gaio v1.2.7
 	golang.org/x/sys v0.0.0-20201116194326-cc9327a14d48 // indirect
 )
