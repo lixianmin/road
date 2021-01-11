@@ -1,7 +1,6 @@
 package road
 
 import (
-	"github.com/lixianmin/logo"
 	"time"
 )
 
@@ -15,7 +14,6 @@ Copyright (C) - All Rights Reserved
 type appOptions struct {
 	HeartbeatInterval        time.Duration // 心跳间隔
 	DataCompression          bool          // 数据是否压缩
-	Logger                   logo.ILogger  // 自定义日志对象，默认只输出到控制台
 	SessionSendingChanSize   int           // session的发送缓冲区大小
 	SessionTaskQueueSize     int           // session的任务队列长度
 	SessionRateLimitBySecond int           // session每秒限流
@@ -34,14 +32,6 @@ func WithHeartbeatInterval(interval time.Duration) AppOption {
 func WithDataCompression(compression bool) AppOption {
 	return func(options *appOptions) {
 		options.DataCompression = compression
-	}
-}
-
-func WithLogger(logger logo.ILogger) AppOption {
-	return func(options *appOptions) {
-		if logger != nil {
-			options.Logger = logger
-		}
 	}
 }
 

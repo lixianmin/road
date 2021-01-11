@@ -23,7 +23,7 @@ package route
 import (
 	"errors"
 	"fmt"
-	"github.com/lixianmin/road/logger"
+	"github.com/lixianmin/logo"
 	"strings"
 )
 
@@ -73,7 +73,7 @@ func Decode(route string) (*Route, error) {
 	case 2:
 		return NewRoute("", r[0], r[1]), nil
 	default:
-		logger.Warn("invalid route: " + route)
+		logo.Warn("invalid route: " + route)
 		return nil, ErrInvalidRoute
 	}
 }

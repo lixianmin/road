@@ -4,13 +4,13 @@ import (
 	"encoding/json"
 	"fmt"
 	"github.com/lixianmin/got/loom"
+	"github.com/lixianmin/logo"
 	"github.com/lixianmin/road/component"
 	"github.com/lixianmin/road/conn/codec"
 	"github.com/lixianmin/road/conn/message"
 	"github.com/lixianmin/road/conn/packet"
 	"github.com/lixianmin/road/docgenerator"
 	"github.com/lixianmin/road/epoll"
-	"github.com/lixianmin/road/logger"
 	"github.com/lixianmin/road/route"
 	"github.com/lixianmin/road/serialize"
 	"github.com/lixianmin/road/util/compression"
@@ -60,7 +60,6 @@ func NewApp(accept epoll.Acceptor, opts ...AppOption) *App {
 	var options = appOptions{
 		HeartbeatInterval:        5 * time.Second,
 		DataCompression:          false,
-		Logger:                   nil,
 		SessionSendingChanSize:   16,
 		SessionTaskQueueSize:     64,
 		SessionRateLimitBySecond: 2,
@@ -70,8 +69,6 @@ func NewApp(accept epoll.Acceptor, opts ...AppOption) *App {
 	for _, opt := range opts {
 		opt(&options)
 	}
-
-	logger.Init(options.Logger)
 
 	var app = &App{
 		handlers:          make(map[string]*component.Handler, 8),
@@ -112,7 +109,7 @@ func (my *App) goLoop(later loom.Later) {
 		case task := <-my.tasks.C:
 			var err = task.Do(fetus)
 			if err != nil {
-				logger.Info("err=%q", err)
+				logo.Info("err=%q", err)
 			}
 		case <-closeChan:
 			return
@@ -166,7 +163,7 @@ func (my *App) Register(comp component.Component, opts ...component.Option) erro
 	for name, handler := range s.Handlers {
 		var route1 = fmt.Sprintf("%s.%s", s.Name, name)
 		my.handlers[route1] = handler
-		logger.Debug("route=%s", route1)
+		logo.Debug("route=%s", route1)
 	}
 
 	return nil

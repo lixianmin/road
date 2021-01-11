@@ -71,7 +71,7 @@ func (my *WsConn) onReceiveData(buff []byte) error {
 	}
 
 	input.Tidy()
-	//logger.Info("readerSize=%d, len(buff)=%d", my.readerWriter.ReaderSize(), len(buff))
+	//logo.Info("readerSize=%d, len(buff)=%d", my.readerWriter.ReaderSize(), len(buff))
 	return nil
 }
 

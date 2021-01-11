@@ -7,7 +7,6 @@ import (
 	"github.com/lixianmin/road/client"
 	"github.com/lixianmin/road/component"
 	"github.com/lixianmin/road/epoll"
-	"github.com/lixianmin/road/logger"
 	"net/http"
 	"strings"
 	"time"
@@ -51,7 +50,7 @@ author:     lixianmin
 `
 
 func main() {
-	logo.GetLogger().SetFilterLevel(logo.LevelDebug)
+	//logo.Getlogo().SetFilterLevel(logo.LevelDebug)
 	listenTcp()
 	listenWebSocket()
 
@@ -71,7 +70,7 @@ func listenTcp() {
 	//testHook(app)
 
 	app.OnHandShaken(func(session *road.Session) {
-		logger.Info("session.id=%d", session.Id())
+		logo.Info("session.id=%d", session.Id())
 		go func() {
 			time.Sleep(5 * time.Second)
 			_ = session.Kick()
@@ -80,7 +79,7 @@ func listenTcp() {
 
 	var pClient = client.New()
 	if err := pClient.ConnectTo(address); err != nil {
-		logger.Error(err.Error())
+		logo.Error(err.Error())
 	}
 
 	go func() {
@@ -91,12 +90,12 @@ func listenTcp() {
 			var data = convert.ToJson(item)
 			_, err := pClient.SendRequest("room.enter", data)
 			if err != nil {
-				logger.Error(err.Error())
+				logo.Error(err.Error())
 			}
 
 			_, err2 := pClient.SendRequest("room.sayerror", data)
 			if err2 != nil {
-				logger.Error(err2)
+				logo.Error(err2)
 			}
 		}
 	}()
@@ -107,11 +106,11 @@ func listenTcp() {
 			case msg := <-pClient.MsgChannel():
 				if msg != nil {
 					if msg.Err {
-						logger.Warn("id=%d, err=%s", msg.Id, string(msg.Data))
+						logo.Warn("id=%d, err=%s", msg.Id, string(msg.Data))
 					} else {
 						var item Enter
 						convert.FromJson(msg.Data, &item)
-						logger.Info("id=%d, name=%s", item.ID, item.Name)
+						logo.Info("id=%d, name=%s", item.ID, item.Name)
 					}
 				}
 				break
@@ -136,7 +135,7 @@ func listenWebSocket() {
 	go func() {
 		var pClient = client.New()
 		if err := pClient.ConnectToWS(address, path); err != nil {
-			logger.Error(err.Error())
+			logo.Error(err.Error())
 		}
 
 		go func() {
@@ -147,7 +146,7 @@ func listenWebSocket() {
 				var data = convert.ToJson(item)
 				_, err := pClient.SendRequest("room.enter", data)
 				if err != nil {
-					logger.Error(err.Error())
+					logo.Error(err.Error())
 				}
 			}
 
@@ -156,11 +155,11 @@ func listenWebSocket() {
 				case msg := <-pClient.MsgChannel():
 					if msg != nil {
 						if msg.Err {
-							logger.Warn(string(msg.Data))
+							logo.Warn(string(msg.Data))
 						} else {
 							var item Enter
 							convert.FromJson(msg.Data, &item)
-							logger.Info("id=%d, name=%s, data=%s", item.ID, item.Name, string(msg.Data))
+							logo.Info("id=%d, name=%s, data=%s", item.ID, item.Name, string(msg.Data))
 						}
 					}
 					break
@@ -178,15 +177,15 @@ func testHook(app *road.App) {
 		var startTime = time.Now()
 		var ret, err = rawMethod()
 		var delta = time.Since(startTime)
-		logger.Info(delta)
+		logo.Info(delta)
 
 		return ret, err
 	})
 
 	app.AddHook(func(rawMethod func() (interface{}, error)) (i interface{}, e error) {
-		logger.Info("hello")
+		logo.Info("hello")
 		var ret, err = rawMethod()
-		logger.Info("world")
+		logo.Info("world")
 		return ret, err
 	})
 }
