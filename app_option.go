@@ -14,7 +14,8 @@ Copyright (C) - All Rights Reserved
 type appOptions struct {
 	HeartbeatInterval        time.Duration // 心跳间隔
 	DataCompression          bool          // 数据是否压缩
-	SessionSendingChanSize   int           // session的发送缓冲区大小
+	SenderChanSize           int           // sender的发送缓冲区大小
+	SenderCount              int           // sender的数量
 	SessionTaskQueueSize     int           // session的任务队列长度
 	SessionRateLimitBySecond int           // session每秒限流
 }
@@ -35,10 +36,18 @@ func WithDataCompression(compression bool) AppOption {
 	}
 }
 
-func WithSessionSendingChanSize(size int) AppOption {
+func WithSenderChanSize(size int) AppOption {
 	return func(options *appOptions) {
 		if size > 0 {
-			options.SessionSendingChanSize = size
+			options.SenderChanSize = size
+		}
+	}
+}
+
+func WithSenderCount(count int) AppOption {
+	return func(options *appOptions) {
+		if count > 0 {
+			options.SenderCount = count
 		}
 	}
 }

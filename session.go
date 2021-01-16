@@ -25,13 +25,13 @@ var (
 
 type (
 	Session struct {
-		app         *App
-		id          int64
-		conn        epoll.PlayerConn
-		attachment  *Attachment
-		sendingChan chan []byte
-		wc          loom.WaitClose
-		tasks       *loom.TaskQueue
+		app        *App
+		id         int64
+		conn       epoll.PlayerConn
+		attachment *Attachment
+		sender     *sessionSender
+		wc         loom.WaitClose
+		tasks      *loom.TaskQueue
 
 		onHandShaken delegate
 		onClosed     delegate
@@ -53,12 +53,13 @@ type (
 )
 
 func NewSession(app *App, conn epoll.PlayerConn) *Session {
+	var id = atomic.AddInt64(&globalIdGenerator, 1)
 	var my = &Session{
-		app:         app,
-		id:          atomic.AddInt64(&globalIdGenerator, 1),
-		conn:        conn,
-		attachment:  &Attachment{},
-		sendingChan: make(chan []byte, app.sendingChanSize),
+		app:        app,
+		id:         id,
+		conn:       conn,
+		attachment: &Attachment{},
+		sender:     app.getSender(id),
 	}
 
 	my.tasks = loom.NewTaskQueue(loom.WithSize(app.taskQueueSize), loom.WithCloseChan(my.wc.C()))

@@ -26,11 +26,12 @@ func (my *Session) Push(route string, v interface{}) error {
 		return err1
 	}
 
-	select {
-	case my.sendingChan <- data:
-	case <-my.wc.C():
-	}
-	return nil
+	//select {
+	//case my.sendingChan <- data:
+	//case <-my.wc.C():
+	//}
+	err = my.writeBytes(data)
+	return err
 }
 
 // 强踢下线
@@ -44,12 +45,13 @@ func (my *Session) Kick() error {
 		return err
 	}
 
-	select {
-	case my.sendingChan <- p:
-		logo.Info("session(%d) will be closed by Kick()", my.id)
-	case <-my.wc.C():
-	}
-	return nil
+	return my.writeBytes(p)
+	//select {
+	//case my.sendingChan <- p:
+	//	logo.Info("session(%d) will be closed by Kick()", my.id)
+	//case <-my.wc.C():
+	//}
+	//return nil
 }
 
 func (my *Session) encodeMessageMayError(msg message.Message, err error) ([]byte, error) {
@@ -79,12 +81,21 @@ func (my *Session) encodeMessageMayError(msg message.Message, err error) ([]byte
 
 func (my *Session) writeBytes(data []byte) error {
 	if len(data) > 0 {
-		var _, err = my.conn.Write(data)
-		return err
+		var item = sendingItem{session: my, data: data}
+		my.sender.sendingChan <- item
 	}
 
 	return nil
 }
+
+//func (my *Session) writeBytes(data []byte) error {
+//	if len(data) > 0 {
+//		var _, err = my.conn.Write(data)
+//		return err
+//	}
+//
+//	return nil
+//}
 
 func (my *Session) packetEncodeMessage(msg *message.Message) ([]byte, error) {
 	data, err := my.app.messageEncoder.Encode(msg)

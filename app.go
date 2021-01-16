@@ -43,8 +43,9 @@ type (
 
 		accept   epoll.Acceptor
 		sessions loom.Map
-		wc       loom.WaitClose
+		senders  []*sessionSender
 		tasks    *loom.TaskQueue
+		wc       loom.WaitClose
 
 		services     map[string]*component.Service // all registered service
 		hookCallback HookFunc
@@ -60,7 +61,8 @@ func NewApp(accept epoll.Acceptor, opts ...AppOption) *App {
 	var options = appOptions{
 		HeartbeatInterval:        5 * time.Second,
 		DataCompression:          false,
-		SessionSendingChanSize:   16,
+		SenderChanSize:           128,
+		SenderCount:              16,
 		SessionTaskQueueSize:     64,
 		SessionRateLimitBySecond: 2,
 	}
@@ -78,7 +80,7 @@ func NewApp(accept epoll.Acceptor, opts ...AppOption) *App {
 		serializer:        serialize.NewJsonSerializer(),
 		wheelSecond:       loom.NewWheel(time.Second, int(options.HeartbeatInterval/time.Second)+1),
 		heartbeatInterval: options.HeartbeatInterval,
-		sendingChanSize:   options.SessionSendingChanSize,
+		sendingChanSize:   options.SenderChanSize,
 		taskQueueSize:     options.SessionTaskQueueSize,
 		rateLimitBySecond: int32(options.SessionRateLimitBySecond),
 
@@ -89,6 +91,7 @@ func NewApp(accept epoll.Acceptor, opts ...AppOption) *App {
 		},
 	}
 
+	app.senders = createSenders(options)
 	app.heartbeatPacketData = app.encodeHeartbeatData()
 	app.handshakeResponseData = app.encodeHandshakeData(options.DataCompression)
 	app.tasks = loom.NewTaskQueue(loom.WithSize(options.SessionTaskQueueSize), loom.WithCloseChan(app.wc.C()))
@@ -239,4 +242,19 @@ func (my *App) encodeHandshakeData(dataCompression bool) []byte {
 	}
 
 	return bytes
+}
+
+func (my *App) getSender(sessionId int64) *sessionSender {
+	var index = int(sessionId) % len(my.senders)
+	var sender = my.senders[index]
+	return sender
+}
+
+func createSenders(options appOptions) []*sessionSender {
+	var senders = make([]*sessionSender, options.SenderCount)
+	for i := 0; i < options.SenderCount; i++ {
+		senders[i] = newSessionSender(options.SenderChanSize)
+	}
+
+	return senders
 }

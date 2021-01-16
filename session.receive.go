@@ -57,11 +57,6 @@ func (my *Session) goSessionLoop(later loom.Later) {
 				logo.Info("close session(%d) by onHeartbeat(), err=%q", my.id, err)
 				return
 			}
-		case data := <-my.sendingChan:
-			if err := my.writeBytes(data); err != nil {
-				logo.Info("close session(%d) by writeBytes(), err=%q", my.id, err)
-				return
-			}
 		case msg := <-receivedChan:
 			fetus.lastAt = time.Now()
 			fetus.rateLimitTokens--
@@ -91,7 +86,7 @@ func (my *Session) onHeartbeat(fetus *sessionFetus) error {
 	}
 
 	// 发送心跳包，如果网络是通的，收到心跳返回时会刷新 lastAt
-	if _, err := my.conn.Write(my.app.heartbeatPacketData); err != nil {
+	if err := my.writeBytes(my.app.heartbeatPacketData); err != nil {
 		return fmt.Errorf("failed to write in conn: %s", err.Error())
 	}
 
