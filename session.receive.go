@@ -64,8 +64,8 @@ func (my *Session) goSessionLoop(later loom.Later) {
 				logo.Info("close session(%d) by onReceivedMessage(), err=%q", my.id, err)
 				return
 			}
-		case task := <-my.tasks.C:
-			_ = task.Do(my)
+		//case task := <-my.tasks.C:
+		//	_ = task.Do(my)
 		case <-closeChan:
 			logo.Info("close session(%d) by calling session.Close()", my.id)
 			return

@@ -31,7 +31,7 @@ type (
 		attachment *Attachment
 		sender     *sessionSender
 		wc         loom.WaitClose
-		tasks      *loom.TaskQueue
+		//tasks      *loom.TaskQueue
 
 		onHandShaken delegate
 		onClosed     delegate
@@ -62,7 +62,7 @@ func NewSession(app *App, conn epoll.PlayerConn) *Session {
 		sender:     app.getSender(id),
 	}
 
-	my.tasks = loom.NewTaskQueue(loom.WithSize(app.taskQueueSize), loom.WithCloseChan(my.wc.C()))
+	//my.tasks = loom.NewTaskQueue(loom.WithSize(app.taskQueueSize), loom.WithCloseChan(my.wc.C()))
 	logo.Info("create session(%d)", my.id)
 	loom.Go(my.goSessionLoop)
 	return my
@@ -89,6 +89,7 @@ func (my *Session) OnClosed(handler func()) {
 }
 
 // 在session中加入SendCallback()的相关权衡？
+// 为什么要删除？ 因为使用SendCallback()的往往都是异步IO，然而异步IO往往都会卡session，所以别用
 //
 // 正面：
 // 1. 异步转同步
@@ -98,14 +99,14 @@ func (my *Session) OnClosed(handler func()) {
 // 负面：
 // 1. 这个方法只对业务有可能有用，但对网络库本身并没有意义；
 // 2. 必须谨慎使用，过长的处理时间会影响后续网络消息处理，可能导致链接超时（当然你可以选择不用）
-func (my *Session) SendCallback(handler loom.TaskHandler) loom.ITask {
-	return my.tasks.SendCallback(handler)
-}
-
-// 延迟任务
-func (my *Session) SendDelayed(delayed time.Duration, handler loom.TaskHandler) {
-	my.tasks.SendDelayed(delayed, handler)
-}
+//func (my *Session) SendCallback(handler loom.TaskHandler) loom.ITask {
+//	return my.tasks.SendCallback(handler)
+//}
+//
+//// 延迟任务
+//func (my *Session) SendDelayed(delayed time.Duration, handler loom.TaskHandler) {
+//	my.tasks.SendDelayed(delayed, handler)
+//}
 
 // 全局唯一id
 func (my *Session) Id() int64 {
