@@ -1,6 +1,7 @@
 package epoll
 
 import (
+	"github.com/lixianmin/got/loom"
 	"github.com/lixianmin/road/conn/codec"
 	"github.com/xtaci/gaio"
 	"net"
@@ -18,6 +19,7 @@ type TcpConn struct {
 	watcher      *gaio.Watcher
 	receivedChan chan Message
 	input        *Buffer
+	wc           loom.WaitClose
 }
 
 func newTcpConn(conn net.Conn, watcher *gaio.Watcher, receivedChanSize int) *TcpConn {
@@ -33,9 +35,7 @@ func newTcpConn(conn net.Conn, watcher *gaio.Watcher, receivedChanSize int) *Tcp
 }
 
 func (my *TcpConn) sendErrorMessage(err error) {
-	if err != nil {
-		my.receivedChan <- Message{Err: err}
-	}
+	my.writeMessage(Message{Err: err})
 }
 
 func (my *TcpConn) GetReceivedChan() <-chan Message {
@@ -66,8 +66,8 @@ func (my *TcpConn) onReceiveData(buff []byte) error {
 
 		var frameData = make([]byte, totalSize)
 		copy(frameData, data[:totalSize])
-		my.receivedChan <- Message{Data: frameData}
 
+		my.writeMessage(Message{Data: frameData})
 		input.Next(totalSize)
 		data = input.Bytes()
 	}
@@ -83,10 +83,19 @@ func (my *TcpConn) Write(b []byte) (int, error) {
 	return len(b), my.watcher.Write(my, my.conn, b)
 }
 
+func (my *TcpConn) writeMessage(msg Message) {
+	select {
+	case my.receivedChan <- msg:
+	case <-my.wc.C():
+	}
+}
+
 // Close closes the connection.
 // Any blocked Read or Write operations will be unblocked and return errors.
 func (my *TcpConn) Close() error {
-	return my.watcher.Free(my.conn)
+	return my.wc.Close(func() error {
+		return my.watcher.Free(my.conn)
+	})
 }
 
 // LocalAddr returns the local address.

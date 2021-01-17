@@ -3,6 +3,7 @@ package epoll
 import (
 	"github.com/gobwas/ws"
 	"github.com/gobwas/ws/wsutil"
+	"github.com/lixianmin/got/loom"
 	"github.com/lixianmin/road/conn/codec"
 	"github.com/xtaci/gaio"
 	"io"
@@ -21,6 +22,7 @@ type WsConn struct {
 	watcher      *gaio.Watcher
 	receivedChan chan Message
 	readerWriter *WsReaderWriter
+	wc           loom.WaitClose
 }
 
 func newWsConn(conn net.Conn, watcher *gaio.Watcher, receivedChanSize int) *WsConn {
@@ -37,7 +39,7 @@ func newWsConn(conn net.Conn, watcher *gaio.Watcher, receivedChanSize int) *WsCo
 
 func (my *WsConn) sendErrorMessage(err error) {
 	if err != nil {
-		my.receivedChan <- Message{Err: err}
+		my.writeMessage(Message{Err: err})
 	}
 }
 
@@ -58,7 +60,7 @@ func (my *WsConn) onReceiveData(buff []byte) error {
 				return nil
 			}
 
-			my.receivedChan <- Message{Err: err}
+			my.writeMessage(Message{Err: err})
 			return err
 		}
 
@@ -67,12 +69,19 @@ func (my *WsConn) onReceiveData(buff []byte) error {
 			return nil
 		}
 
-		my.receivedChan <- Message{Data: data}
+		my.writeMessage(Message{Data: data})
 	}
 
 	input.Tidy()
 	//logo.Info("readerSize=%d, len(buff)=%d", my.readerWriter.ReaderSize(), len(buff))
 	return nil
+}
+
+func (my *WsConn) writeMessage(msg Message) {
+	select {
+	case my.receivedChan <- msg:
+	case <-my.wc.C():
+	}
 }
 
 // Write writes data to the connection.
@@ -91,7 +100,9 @@ func (my *WsConn) Write(b []byte) (int, error) {
 // Close closes the connection.
 // Any blocked Read or Write operations will be unblocked and return errors.
 func (my *WsConn) Close() error {
-	return my.watcher.Free(my.conn)
+	return my.wc.Close(func() error {
+		return my.watcher.Free(my.conn)
+	})
 }
 
 // LocalAddr returns the local address.
