@@ -61,9 +61,8 @@ func NewApp(accept epoll.Acceptor, opts ...AppOption) *App {
 	var options = appOptions{
 		HeartbeatInterval:        5 * time.Second,
 		DataCompression:          false,
-		SenderChanSize:           128,
+		SenderBufferSize:         4096,
 		SenderCount:              16,
-		SessionTaskQueueSize:     64,
 		SessionRateLimitBySecond: 2,
 	}
 
@@ -80,8 +79,7 @@ func NewApp(accept epoll.Acceptor, opts ...AppOption) *App {
 		serializer:        serialize.NewJsonSerializer(),
 		wheelSecond:       loom.NewWheel(time.Second, int(options.HeartbeatInterval/time.Second)+1),
 		heartbeatInterval: options.HeartbeatInterval,
-		sendingChanSize:   options.SenderChanSize,
-		taskQueueSize:     options.SessionTaskQueueSize,
+		sendingChanSize:   options.SenderBufferSize,
 		rateLimitBySecond: int32(options.SessionRateLimitBySecond),
 
 		accept:   accept,
@@ -94,7 +92,9 @@ func NewApp(accept epoll.Acceptor, opts ...AppOption) *App {
 	app.senders = createSenders(options)
 	app.heartbeatPacketData = app.encodeHeartbeatData()
 	app.handshakeResponseData = app.encodeHandshakeData(options.DataCompression)
-	app.tasks = loom.NewTaskQueue(loom.WithSize(options.SessionTaskQueueSize), loom.WithCloseChan(app.wc.C()))
+
+	// 这个tasks，只是内部用一下，不公开
+	app.tasks = loom.NewTaskQueue(loom.WithSize(2), loom.WithCloseChan(app.wc.C()))
 
 	loom.Go(app.goLoop)
 	return app
@@ -253,7 +253,7 @@ func (my *App) getSender(sessionId int64) *sessionSender {
 func createSenders(options appOptions) []*sessionSender {
 	var senders = make([]*sessionSender, options.SenderCount)
 	for i := 0; i < options.SenderCount; i++ {
-		senders[i] = newSessionSender(options.SenderChanSize)
+		senders[i] = newSessionSender(options.SenderBufferSize)
 	}
 
 	return senders

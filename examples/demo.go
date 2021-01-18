@@ -63,7 +63,7 @@ func listenTcp() {
 	var app = road.NewApp(accept,
 		road.WithSessionRateLimitBySecond(123456789),
 		road.WithHeartbeatInterval(2*time.Second),
-		road.WithSenderChanSize(1))
+		road.WithSenderBufferSize(1))
 
 	var room = &Room{}
 	_ = app.Register(room, component.WithName("room"), component.WithNameFunc(strings.ToLower))
