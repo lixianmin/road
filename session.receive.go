@@ -82,7 +82,7 @@ func (my *Session) onHeartbeat(fetus *sessionFetus) error {
 
 	var passedTime = time.Now().Sub(fetus.lastAt)
 	if passedTime > fetus.heartbeatTimeout {
-		return fmt.Errorf("session heartbeat timeout, lastAt=%q, heartbeatTimeout=%s", fetus.lastAt.Format(timex.TimeLayout), fetus.heartbeatTimeout)
+		return fmt.Errorf("session heartbeat timeout, lastAt=%q, heartbeatTimeout=%s", fetus.lastAt.Format(timex.Layout), fetus.heartbeatTimeout)
 	}
 
 	// 发送心跳包，如果网络是通的，收到心跳返回时会刷新 lastAt
