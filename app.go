@@ -130,7 +130,10 @@ func (my *App) onNewSession(fetus *appFetus, conn epoll.PlayerConn) {
 		my.sessions.Remove(id)
 	})
 
-	for _, handler := range fetus.onHandShakenHandlers {
+	// for循环中小心closure的问题
+	var handlers = fetus.onHandShakenHandlers
+	for i := range handlers {
+		var handler = handlers[i]
 		session.OnHandShaken(func() {
 			handler(session)
 		})
