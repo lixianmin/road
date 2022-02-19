@@ -151,7 +151,7 @@ func (my *Session) onReceivedData(fetus *sessionFetus, p *packet.Packet) error {
 
 	// 如果令牌数耗尽，则拒绝处理，并给客户端报错
 	needReply := item.msg.Type != message.Notify
-	logo.Debug("needReplay=%v, message=%v", needReply, item.msg)
+	//logo.Debug("needReplay=%v, message=%v", needReply, item.msg)
 
 	if fetus.rateLimitTokens <= 0 {
 		if needReply {

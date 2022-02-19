@@ -81,7 +81,7 @@ func (my *Session) encodeMessageMayError(msg message.Message, err error) ([]byte
 
 func (my *Session) writeBytes(data []byte) error {
 	var size = len(data)
-	logo.Debug("len(data)=%d, data=%v", size, data)
+	//logo.Debug("len(data)=%d, data=%v", size, data)
 	if size > 0 {
 		var item = sendingItem{session: my, data: data}
 		my.sender.sendingChan <- item
