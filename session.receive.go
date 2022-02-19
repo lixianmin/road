@@ -123,7 +123,7 @@ func (my *Session) onReceivedMessage(fetus *sessionFetus, msg epoll.Message) err
 				return err
 			}
 		case packet.Heartbeat:
-			logo.Debug("session(%d) received heartbeat", my.id)
+			//logo.Debug("session(%d) received heartbeat", my.id)
 		}
 	}
 
@@ -180,6 +180,7 @@ func (my *Session) onReceivedData(fetus *sessionFetus, p *packet.Packet) error {
 	}
 
 	payload, err := processReceivedData(item, handler, my.app.serializer, my.app.hookCallback)
+	logo.Debug("needReplay=%v, payload=%v", needReply, payload)
 	if needReply {
 		var msg = message.Message{Type: message.Response, Id: item.msg.Id, Data: payload}
 		var data, err1 = my.encodeMessageMayError(msg, err)
