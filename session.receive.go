@@ -91,7 +91,7 @@ func (my *Session) onHeartbeat(fetus *sessionFetus) error {
 	}
 
 	// 注意：libpitaya的heartbeat部分好像是问题的，只能在应用层自己做ping/pong
-	//logo.Debug("session(%d) sent heartbeat", my.id)
+	logo.Debug("session(%d) sent heartbeat", my.id)
 	return nil
 }
 
@@ -123,7 +123,7 @@ func (my *Session) onReceivedMessage(fetus *sessionFetus, msg epoll.Message) err
 				return err
 			}
 		case packet.Heartbeat:
-			//logo.Debug("session(%d) received heartbeat", my.id)
+			logo.Debug("session(%d) received heartbeat", my.id)
 		}
 	}
 
