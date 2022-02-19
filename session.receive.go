@@ -142,7 +142,7 @@ func (my *Session) onReceivedHandshake(fetus *sessionFetus, p *packet.Packet) er
 }
 
 func (my *Session) onReceivedData(fetus *sessionFetus, p *packet.Packet) error {
-	logo.Debug("packet=%v", p)
+	//logo.Debug("packet=%v", p)
 	item, err := my.decodeReceivedData(p)
 	if err != nil {
 		var err1 = fmt.Errorf("failed to process packet: %s", err.Error())
@@ -151,6 +151,8 @@ func (my *Session) onReceivedData(fetus *sessionFetus, p *packet.Packet) error {
 
 	// 如果令牌数耗尽，则拒绝处理，并给客户端报错
 	needReply := item.msg.Type != message.Notify
+	logo.Debug("needReplay=%v, message=%v", needReply, item.msg)
+
 	if fetus.rateLimitTokens <= 0 {
 		if needReply {
 			var msg = message.Message{Type: message.Response, Id: item.msg.Id}
@@ -180,7 +182,6 @@ func (my *Session) onReceivedData(fetus *sessionFetus, p *packet.Packet) error {
 	}
 
 	payload, err := processReceivedData(item, handler, my.app.serializer, my.app.hookCallback)
-	logo.Debug("needReplay=%v, payload=%v", needReply, payload)
 	if needReply {
 		var msg = message.Message{Type: message.Response, Id: item.msg.Id, Data: payload}
 		var data, err1 = my.encodeMessageMayError(msg, err)
