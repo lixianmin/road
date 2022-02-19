@@ -91,7 +91,7 @@ func (my *Session) onHeartbeat(fetus *sessionFetus) error {
 	}
 
 	// 注意：libpitaya的heartbeat部分好像是问题的，只能在应用层自己做ping/pong
-	logo.Debug("session(%d) sent heartbeat", my.id)
+	//logo.Debug("session(%d) sent heartbeat", my.id)
 	return nil
 }
 
@@ -142,6 +142,7 @@ func (my *Session) onReceivedHandshake(fetus *sessionFetus, p *packet.Packet) er
 }
 
 func (my *Session) onReceivedData(fetus *sessionFetus, p *packet.Packet) error {
+	logo.Debug("packet=%v", p)
 	item, err := my.decodeReceivedData(p)
 	if err != nil {
 		var err1 = fmt.Errorf("failed to process packet: %s", err.Error())
