@@ -340,7 +340,7 @@ func (c *Client) SendRequest(route string, data []byte) (uint, error) {
 	return c.sendMsg(message.Request, route, data)
 }
 
-// SendNotify sends a notify to the server
+// SendNotify sends a notification to the server
 func (c *Client) SendNotify(route string, data []byte) error {
 	_, err := c.sendMsg(message.Notify, route, data)
 	return err

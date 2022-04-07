@@ -34,7 +34,7 @@ func (my *Session) Push(route string, v interface{}) error {
 	return err
 }
 
-// 强踢下线
+// Kick 强踢下线
 func (my *Session) Kick() error {
 	if my.wc.IsClosed() {
 		return nil
