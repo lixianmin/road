@@ -23,7 +23,7 @@ Copyright (C) - All Rights Reserved
 *********************************************************************/
 
 type sendingItem struct {
-	session *Session
+	session *sessionImpl
 	data    []byte
 }
 
@@ -49,7 +49,7 @@ func (my *sessionSender) goLoop(later loom.Later) {
 	}
 }
 
-func (my *sessionSender) onWriteBytes(session *Session, data []byte) {
+func (my *sessionSender) onWriteBytes(session *sessionImpl, data []byte) {
 	select {
 	case <-session.wc.C():
 	default:

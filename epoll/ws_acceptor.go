@@ -11,6 +11,7 @@ author:     lixianmin
 
 Copyright (C) - All Rights Reserved
 *********************************************************************/
+
 type WsAcceptor struct {
 	*PlayerAcceptor
 	connChan         chan PlayerConn

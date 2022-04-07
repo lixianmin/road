@@ -52,7 +52,7 @@ type (
 	}
 
 	appFetus struct {
-		onHandShakenHandlers []func(*Session)
+		onHandShakenHandlers []func(session Session)
 	}
 )
 
@@ -101,8 +101,7 @@ func NewApp(accept epoll.Acceptor, opts ...AppOption) *App {
 }
 
 func (my *App) goLoop(later loom.Later) {
-	var fetus = &appFetus{
-	}
+	var fetus = &appFetus{}
 
 	var closeChan = my.wc.C()
 	for {
@@ -140,8 +139,8 @@ func (my *App) onNewSession(fetus *appFetus, conn epoll.PlayerConn) {
 	}
 }
 
-// 暴露一个OnConnected()事件暂时没有看到很大的意义，因为handshake必须是第一个消息
-func (my *App) OnHandShaken(handler func(*Session)) {
+// OnHandShaken 暴露一个OnConnected()事件暂时没有看到很大的意义，因为handshake必须是第一个消息
+func (my *App) OnHandShaken(handler func(session Session)) {
 	if handler == nil {
 		return
 	}

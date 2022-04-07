@@ -12,6 +12,7 @@ author:     lixianmin
 
 Copyright (C) - All Rights Reserved
 *********************************************************************/
+
 type TcpAcceptor struct {
 	*PlayerAcceptor
 	connChan chan PlayerConn
@@ -55,11 +56,11 @@ func (my *TcpAcceptor) goListener(address string, receivedChanSize int) {
 			continue
 		}
 
-		var item = newTcpConn(conn, watcher, receivedChanSize)
-		if item != nil {
-			var err = watcher.Read(item, conn, nil)
+		var connection = newTcpConn(conn, watcher, receivedChanSize)
+		if connection != nil {
+			var err = watcher.Read(connection, conn, nil)
 			if err == nil {
-				my.connChan <- item
+				my.connChan <- connection
 			}
 		}
 	}

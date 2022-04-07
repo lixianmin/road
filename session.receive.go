@@ -27,7 +27,7 @@ author:     lixianmin
 Copyright (C) - All Rights Reserved
 *********************************************************************/
 
-func (my *Session) goSessionLoop(later loom.Later) {
+func (my *sessionImpl) goSessionLoop(later loom.Later) {
 	defer my.Close()
 
 	var receivedChan = my.conn.GetReceivedChan()
@@ -73,7 +73,7 @@ func (my *Session) goSessionLoop(later loom.Later) {
 	}
 }
 
-func (my *Session) onHeartbeat(fetus *sessionFetus) error {
+func (my *sessionImpl) onHeartbeat(fetus *sessionFetus) error {
 	// 如果在一个心跳时间后还没有收到握手消息，就断开链接。
 	// 登录验证之类的事情是在机会在onHandShaken事件中验证的
 	if !fetus.isHandshakeReceived {
@@ -95,7 +95,7 @@ func (my *Session) onHeartbeat(fetus *sessionFetus) error {
 	return nil
 }
 
-func (my *Session) onReceivedMessage(fetus *sessionFetus, msg epoll.Message) error {
+func (my *sessionImpl) onReceivedMessage(fetus *sessionFetus, msg epoll.Message) error {
 	var err = msg.Err
 	if err != nil {
 		return msg.Err
@@ -131,7 +131,7 @@ func (my *Session) onReceivedMessage(fetus *sessionFetus, msg epoll.Message) err
 }
 
 // 如果长时间收不到握手消息，服务器会主动断开链接
-func (my *Session) onReceivedHandshake(fetus *sessionFetus, p *packet.Packet) error {
+func (my *sessionImpl) onReceivedHandshake(fetus *sessionFetus, p *packet.Packet) error {
 	fetus.isHandshakeReceived = true
 	var err = my.writeBytes(my.app.handshakeResponseData)
 	if err == nil {
@@ -141,8 +141,7 @@ func (my *Session) onReceivedHandshake(fetus *sessionFetus, p *packet.Packet) er
 	return err
 }
 
-func (my *Session) onReceivedData(fetus *sessionFetus, p *packet.Packet) error {
-	//logo.Debug("packet=%v", p)
+func (my *sessionImpl) onReceivedData(fetus *sessionFetus, p *packet.Packet) error {
 	item, err := my.decodeReceivedData(p)
 	if err != nil {
 		var err1 = fmt.Errorf("failed to process packet: %s", err.Error())
@@ -195,7 +194,7 @@ func (my *Session) onReceivedData(fetus *sessionFetus, p *packet.Packet) error {
 	return nil
 }
 
-func (my *Session) decodeReceivedData(p *packet.Packet) (receivedItem, error) {
+func (my *sessionImpl) decodeReceivedData(p *packet.Packet) (receivedItem, error) {
 	msg, err := message.Decode(p.Data)
 	if err != nil {
 		return receivedItem{}, err

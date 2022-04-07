@@ -14,7 +14,7 @@ author:     lixianmin
 Copyright (C) - All Rights Reserved
 *********************************************************************/
 
-func (my *Session) Push(route string, v interface{}) error {
+func (my *sessionImpl) Push(route string, v interface{}) error {
 	if my.wc.IsClosed() {
 		return nil
 	}
@@ -35,7 +35,7 @@ func (my *Session) Push(route string, v interface{}) error {
 }
 
 // Kick 强踢下线
-func (my *Session) Kick() error {
+func (my *sessionImpl) Kick() error {
 	if my.wc.IsClosed() {
 		return nil
 	}
@@ -54,7 +54,7 @@ func (my *Session) Kick() error {
 	//return nil
 }
 
-func (my *Session) encodeMessageMayError(msg message.Message, err error) ([]byte, error) {
+func (my *sessionImpl) encodeMessageMayError(msg message.Message, err error) ([]byte, error) {
 	if err != nil {
 		msg.Err = true
 		//logo.Info("process failed, route=%s, err=%q", msg.Route, err.Error())
@@ -79,10 +79,8 @@ func (my *Session) encodeMessageMayError(msg message.Message, err error) ([]byte
 	return data, nil
 }
 
-func (my *Session) writeBytes(data []byte) error {
-	var size = len(data)
-	//logo.Debug("len(data)=%d, data=%v", size, data)
-	if size > 0 {
+func (my *sessionImpl) writeBytes(data []byte) error {
+	if len(data) > 0 {
 		var item = sendingItem{session: my, data: data}
 		my.sender.sendingChan <- item
 	}
@@ -90,7 +88,7 @@ func (my *Session) writeBytes(data []byte) error {
 	return nil
 }
 
-//func (my *Session) writeBytes(data []byte) error {
+//func (my *sessionImpl) writeBytes(data []byte) error {
 //	if len(data) > 0 {
 //		var _, err = my.conn.Write(data)
 //		return err
@@ -99,7 +97,7 @@ func (my *Session) writeBytes(data []byte) error {
 //	return nil
 //}
 
-func (my *Session) packetEncodeMessage(msg *message.Message) ([]byte, error) {
+func (my *sessionImpl) packetEncodeMessage(msg *message.Message) ([]byte, error) {
 	data, err := my.app.messageEncoder.Encode(msg)
 	if err != nil {
 		return nil, err
