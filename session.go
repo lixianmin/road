@@ -42,7 +42,6 @@ func NewSession(app *App, conn epoll.PlayerConn) Session {
 		sender:     app.getSender(id),
 	}}
 
-	//my.tasks = loom.NewTaskQueue(loom.WithSize(app.taskQueueSize), loom.WithCloseChan(my.wc.C()))
 	logo.Info("create session(%d)", my.id)
 	loom.Go(my.goSessionLoop)
 

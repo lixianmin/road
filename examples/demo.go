@@ -69,7 +69,7 @@ func listenTcp() {
 	_ = app.Register(room, component.WithName("room"), component.WithNameFunc(strings.ToLower))
 	//testHook(app)
 
-	app.OnHandShaken(func(session *road.sessionImpl) {
+	app.OnHandShaken(func(session road.Session) {
 		logo.Info("session.id=%d", session.Id())
 		go func() {
 			time.Sleep(5 * time.Second)

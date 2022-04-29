@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"github.com/lixianmin/got/loom"
+	"github.com/lixianmin/got/taskx"
 	"github.com/lixianmin/logo"
 	"github.com/lixianmin/road/component"
 	"github.com/lixianmin/road/conn/codec"
@@ -44,7 +45,7 @@ type (
 		accept   epoll.Acceptor
 		sessions loom.Map
 		senders  []*sessionSender
-		tasks    *loom.TaskQueue
+		tasks    *taskx.Queue
 		wc       loom.WaitClose
 
 		services     map[string]*component.Service // all registered service
@@ -94,7 +95,7 @@ func NewApp(accept epoll.Acceptor, opts ...AppOption) *App {
 	app.handshakeResponseData = app.encodeHandshakeData(options.DataCompression)
 
 	// 这个tasks，只是内部用一下，不公开
-	app.tasks = loom.NewTaskQueue(loom.WithSize(2), loom.WithCloseChan(app.wc.C()))
+	app.tasks = taskx.NewQueue(taskx.WithSize(2), taskx.WithCloseChan(app.wc.C()))
 
 	loom.Go(app.goLoop)
 	return app

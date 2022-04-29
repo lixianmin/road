@@ -80,12 +80,12 @@ func (my *sessionImpl) OnClosed(handler func()) {
 // 负面：
 // 1. 这个方法只对业务有可能有用，但对网络库本身并没有意义；
 // 2. 必须谨慎使用，过长的处理时间会影响后续网络消息处理，可能导致链接超时（当然你可以选择不用）
-//func (my *sessionImpl) SendCallback(handler loom.TaskHandler) loom.ITask {
+//func (my *sessionImpl) SendCallback(handler taskx.Handler) loom.ITask {
 //	return my.tasks.SendCallback(handler)
 //}
 //
 //// 延迟任务
-//func (my *sessionImpl) SendDelayed(delayed time.Duration, handler loom.TaskHandler) {
+//func (my *sessionImpl) SendDelayed(delayed time.Duration, handler taskx.Handler) {
 //	my.tasks.SendDelayed(delayed, handler)
 //}
 
