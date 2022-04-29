@@ -2,6 +2,7 @@ package main
 
 import (
 	"github.com/lixianmin/got/convert"
+	"github.com/lixianmin/got/timex"
 	"github.com/lixianmin/logo"
 	"github.com/lixianmin/road"
 	"github.com/lixianmin/road/client"
@@ -95,7 +96,7 @@ func listenTcp() {
 
 			_, err2 := pClient.SendRequest("room.sayerror", data)
 			if err2 != nil {
-				logo.Error(err2)
+				logo.Error(err2.Error())
 			}
 		}
 	}()
@@ -177,7 +178,7 @@ func testHook(app *road.App) {
 		var startTime = time.Now()
 		var ret, err = rawMethod()
 		var delta = time.Since(startTime)
-		logo.Info(delta)
+		logo.Info(timex.FormatDuration(delta))
 
 		return ret, err
 	})

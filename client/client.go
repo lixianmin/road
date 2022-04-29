@@ -232,7 +232,7 @@ func (c *Client) handleServerMessages() {
 	for c.IsConnected() {
 		packets, err := c.readPackets(buf)
 		if err != nil && c.IsConnected() {
-			logo.Info(err)
+			logo.Info(err.Error())
 			break
 		}
 
