@@ -36,7 +36,7 @@ func (my *sessionImpl) goSessionLoop(later loom.Later) {
 
 	var heartbeatInterval = app.heartbeatInterval
 	var heartbeatTimer = app.wheelSecond.NewTimer(heartbeatInterval)
-	var stepRateLimitTokens = mathx.MaxInt32(1, int32(float64(heartbeatInterval)/float64(time.Second)*float64(app.rateLimitBySecond)))
+	var stepRateLimitTokens = mathx.MaxI32(1, int32(float64(heartbeatInterval)/float64(time.Second)*float64(app.rateLimitBySecond)))
 
 	var fetus = &sessionFetus{
 		lastAt:           time.Now(),
@@ -51,7 +51,7 @@ func (my *sessionImpl) goSessionLoop(later loom.Later) {
 			heartbeatTimer.Reset()
 
 			// 使用时间窗口限制令牌数
-			fetus.rateLimitTokens = mathx.MinInt32(fetus.rateLimitWindow, fetus.rateLimitTokens+stepRateLimitTokens)
+			fetus.rateLimitTokens = mathx.MinI32(fetus.rateLimitWindow, fetus.rateLimitTokens+stepRateLimitTokens)
 
 			if err := my.onHeartbeat(fetus); err != nil {
 				logo.Info("close session(%d) by onHeartbeat(), err=%q", my.id, err)
