@@ -27,11 +27,12 @@ func (my *delegate) Add(handler func()) {
 
 func (my *delegate) Invoke() {
 	// 单独clone一份出来，因为callback的方法体调用了哪些内容未知，防止循环调用导致死循环
+	//
+	// 2022-09-03 对循环调用导致死循环这事, clone一份出来真的能解决问题嘛? 存疑!
+	// 通常, 我们copy一份出来是为了减少临界区占用的时间
 	my.lock.Lock()
 	var cloned = make([]func(), len(my.handlers))
-	for i, handler := range my.handlers {
-		cloned[i] = handler
-	}
+	copy(cloned, my.handlers)
 	my.lock.Unlock()
 
 	defer func() {
