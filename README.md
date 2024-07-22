@@ -2,7 +2,7 @@
 ------
 #### 0x01 road
 
-代码已经重新设计, 本项目不再维护, 请参考新代码逻辑: [gonsole/road](https://github.com/lixianmin/gonsole/road)
+代码已经重新设计, 本项目不再维护, 请参考新代码逻辑: [gonsole/road](https://github.com/lixianmin/gonsole/tree/master/road)
 
 ----
 
